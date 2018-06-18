@@ -1,13 +1,4 @@
-﻿/*
- * Created by SharpDevelop.
- * User: Lasse Haffke
- * Date: 14.06.2018
- * Time: 11:13
- * 
- *
-*  To change this template use Tools | Options | Coding | Edit Standard Headers.
- */
-using System;
+﻿using System;
 using UnityEngine;
 
 
@@ -30,7 +21,7 @@ public class FixAngle
 	}
 	
 	public float toRad(){
-		return _angle * Deg2Rad;
+		return _angle * Mathf.Deg2Rad;
 	}
 }
 
