@@ -2,20 +2,32 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+/**
+ * Representation of a toric manifold surface
+ * Used for the main library funcctions like calculating the orientation, or the worldposition.
+ * 
+ * @author Lasse Haffke 
+ * @version 20.06.18
+ * 
+ * 
+ */
 public class Toricmanifold
 {
-
+    //characteristics of toric manifold
     private FixAngle _alpha;
     private FixAngle _theta;
     private FixAngle _phi;
+
     private GameObject _target1;
     private GameObject _target2;
     private Camera _main;
 
+    //target positions
     private Vector3 A;
     private Vector3 B;
     private Vector3 AB;
+    
+    //scale factors for Transition matrix
     private float Sx;
     private float Sy;
 
@@ -23,6 +35,14 @@ public class Toricmanifold
     private Vector2 pA;
     private Vector2 pB;
 
+    /**
+     *Intialising all fields
+     * @param alpha the angle between the camera and the two targets
+     * @param theta horizontal rotation angle 
+     * @param phi   vertical rotation angle 
+     * @param target1   first target
+     * @param target2   second target
+     */
     public Toricmanifold(float alpha, float theta, float phi, GameObject target1, GameObject target2)
     {
         _target1 = target1;
@@ -39,12 +59,15 @@ public class Toricmanifold
         computeScale();
     }
 
-
-
     public Toricmanifold(float alpha, GameObject target1, GameObject target2) : this(alpha, 0, 0, target1, target2)
     {
     }
 
+    /**
+    *Calculates the WorldPosition from the field values of the object
+    * @return the vector3 position in world coordinates
+    * 
+    */
     public Vector3 ToWorldPosition()
     {
         Vector3 C = new Vector3(0, 0, 0);
@@ -71,16 +94,33 @@ public class Toricmanifold
         return C;
     }
 
-    public Quaternion ComputeOrientation(Vector3 campPos, float TiltAngle = 0)
+    /**
+     * Computes the orientation for a given position, optionally enforces a given tilt angle
+     * @param camPos the camera position
+     * @param TiltAngle = 0 the optional tilt angle around the cameras forward vector
+     * 
+     * @return Quaternion the final camera orientation
+     * TODO check qTrans and qLook
+     */
+    public Quaternion ComputeOrientation(Vector3 camPos, float TiltAngle = 0)
     {
-        Quaternion qLook = computeLookAt(campPos);
+        //main camera direction
+        Quaternion qLook = computeLookAt(camPos);
+        //positions the targets at the desired screen positions
         Quaternion qTrans = computeLookAtTransition();
+
         //Tilt works
         Quaternion qPhi = computeTiltAngle(TiltAngle);
 
         return qPhi * qLook * (Quaternion.Inverse(qTrans));
     }
 
+    /**
+     * computes the rotation needed to place the targets at the desired screen positions
+     * @return Quaternion with the  rotation
+     * 
+     * TODO check if pixel or procent for position specification
+     */
     private Quaternion computeLookAtTransition()
     {
 
@@ -89,7 +129,7 @@ public class Toricmanifold
         Vector3 p3O = new Vector3(0, 0, 1);
         Vector3.Normalize(p3O);
         
-        //FIX correct way to calculate Vector3?
+        //TODO correct way to calculate Vector3?
         Vector3 p3M = new Vector3(pM.x / Sx, pM.y / Sy, 1);
         Vector3.Normalize(p3M);
         Vector3 m = Vector3.Cross(p3M, p3O);
@@ -98,13 +138,22 @@ public class Toricmanifold
         return Quaternion.AngleAxis(angle, m);
     }
 
+    /**
+    *enforces the tilt angle around the cameras forward vector
+    * @param tilt the tilt angle
+    * @return Quaternion the rotation aorund the forward vector
+    */
     private Quaternion computeTiltAngle(float tilt)
     {
         FixAngle phi = new FixAngle(tilt);
         return Quaternion.AngleAxis(phi.angle(), _main.transform.forward);
     }
 
-
+    /**
+     * focuses on the middle between the two targets
+     * @param camPos camera position
+     * @return Quaternion the rotation to look at the middle between the two targets
+     */ 
     private Quaternion computeLookAt(Vector3 camPos)
     {
         Vector3 dA = A - camPos;
@@ -122,16 +171,25 @@ public class Toricmanifold
        
     }
 
+    /**
+     * helps compute qTrans depending on the main cameras field of view
+     * https://gist.github.com/coastwise/5951291 (to get the horizontal fov from the vertical)
+     */
     private void computeScale()
     {
         float VerticalfovAngleRAD = _main.fieldOfView * Mathf.Deg2Rad;
-        //https://gist.github.com/coastwise/5951291
+
         float HorizontalfovAngleRAD = 2 *  Mathf.Atan(Mathf.Tan(VerticalfovAngleRAD/2) * _main.aspect);
         Sx = 1 / Mathf.Tan(HorizontalfovAngleRAD / 2);
         Sy = 1 / Mathf.Tan(VerticalfovAngleRAD / 2);
     }
 
-    public void setDesiredPosition(Vector2 screenPos1, Vector2 screenPos2)
+    /**
+     * sets the desired screen positions of each target
+     * @param screenPos1 
+     * @param screenPos2
+     */
+    public void SetDesiredPosition(Vector2 screenPos1, Vector2 screenPos2)
     {
         pA = screenPos1;
         pB = screenPos2;

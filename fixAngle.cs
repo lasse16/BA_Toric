@@ -1,11 +1,12 @@
 ﻿using System;
 using UnityEngine;
+/**
+ * A representation of an angle, always under 360 degrees and with a easy toRad function.
+ * 
+ * @author Lasse Haffke 
+ * @version 20.06.18
+ */
 
-
-
-/// <summary>
-/// A representtaation of an angle, always under 360 degrees and with a easy toRad function.
-/// </summary>
 public class FixAngle
 {
 	private float _angle;
