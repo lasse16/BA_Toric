@@ -26,7 +26,7 @@ public class Toricmanifold
     private Vector3 A;
     private Vector3 B;
     private Vector3 AB;
-    
+
     //scale factors for Transition matrix
     private float Sx;
     private float Sy;
@@ -125,10 +125,10 @@ public class Toricmanifold
     {
 
         Vector2 pO = new Vector2(0, 0);
-        Vector2 pM = new Vector2((pA.x+pB.x)/2 , (pA.y + pB.y) / 2);
+        Vector2 pM = new Vector2((pA.x + pB.x) / 2, (pA.y + pB.y) / 2);
         Vector3 p3O = new Vector3(0, 0, 1);
         Vector3.Normalize(p3O);
-        
+
         //TODO correct way to calculate Vector3?
         Vector3 p3M = new Vector3(pM.x / Sx, pM.y / Sy, 1);
         Vector3.Normalize(p3M);
@@ -153,7 +153,7 @@ public class Toricmanifold
      * focuses on the middle between the two targets
      * @param camPos camera position
      * @return Quaternion the rotation to look at the middle between the two targets
-     */ 
+     */
     private Quaternion computeLookAt(Vector3 camPos)
     {
         Vector3 dA = A - camPos;
@@ -168,7 +168,7 @@ public class Toricmanifold
 
         Vector3 l = 0.5f * (dA2 + dB2);
         return Quaternion.LookRotation(l);
-       
+
     }
 
     /**
@@ -179,7 +179,7 @@ public class Toricmanifold
     {
         float VerticalfovAngleRAD = _main.fieldOfView * Mathf.Deg2Rad;
 
-        float HorizontalfovAngleRAD = 2 *  Mathf.Atan(Mathf.Tan(VerticalfovAngleRAD/2) * _main.aspect);
+        float HorizontalfovAngleRAD = 2 * Mathf.Atan(Mathf.Tan(VerticalfovAngleRAD / 2) * _main.aspect);
         Sx = 1 / Mathf.Tan(HorizontalfovAngleRAD / 2);
         Sy = 1 / Mathf.Tan(VerticalfovAngleRAD / 2);
     }
@@ -194,4 +194,16 @@ public class Toricmanifold
         pA = screenPos1;
         pB = screenPos2;
     }
+
+ 
+
+
+
+ 
+
+
+
+
 }
+
+ 
