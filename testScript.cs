@@ -2,10 +2,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+
 /**
- * Basic test script for two targets
- * 
- */
+* Basic test script for two targets
+* 
+*/
 public class testScript : MonoBehaviour
 {
     public float alpha;
@@ -51,17 +52,29 @@ public class testScript : MonoBehaviour
         ToricComputing tc = new ToricComputing(target1, target2);
         Dictionary<float, Intervall> alphas =  tc.getIntervalOfAcceptedAlpha(distanceToA,distanceToB);
 
-        Debug.Log(alpha);
-        Debug.Log(theta);
+       
 
         Intervall outInt;
-        theta = UnityEngine.Random.Range(0, 359);
+        float[] thetas = new float[alphas.Keys.Count];
+        alphas.Keys.CopyTo(thetas, 0);
+        theta = thetas[UnityEngine.Random.Range(0, thetas.Length)];
+
+        //DEBUG
+        foreach (float t in thetas)
+        {
+            Intervall output;
+            alphas.TryGetValue(t, out output);
+            Debug.Log(t + ":" + output.Length() + "-");
+        }       
+        //DEBUG
         Debug.Log(theta);
+        Debug.Log(ToricComputing.FloatArrayToString(thetas));
+
         alphas.TryGetValue(theta, out outInt);
-        Debug.Log(outInt);
         alpha = outInt.getRandom();
 
-        Debug.Log(alphas);
+        //DEBUG
+        Debug.Log(outInt);
         Debug.Log(alpha);
         
 

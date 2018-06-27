@@ -15,9 +15,9 @@ public class Intervall
     private readonly float LOWERBOUND;
     private readonly float UPPERBOUND;
     private float _samplingRate;
-    public static Intervall DegreeInterval = new Intervall(0, 360);
+    public static Intervall DegreeInterval = new Intervall(0, 360, 1);
 
-    public Intervall(float lBound, float uBound, float samplingRate = 1)
+    public Intervall(float lBound, float uBound, float samplingRate = 0.5f)
     {
         if (lBound > uBound)
         {
@@ -96,14 +96,22 @@ public class Intervall
     public float getRandom()
     {
         List<float> values = getEveryValue();
-        int key = UnityEngine.Random.Range(0, values.Count - 1);
+        int key = UnityEngine.Random.Range(0, values.Count);
+
+        //DEBUG
         Debug.Log(values.Count);
         Debug.Log(key);
+        
         return values[key];
     }
 
     public override string ToString()
     {
         return "[" + LOWERBOUND + ";" + UPPERBOUND + "]";
+    }
+
+    public float Length()
+    {
+        return (UPPERBOUND - LOWERBOUND) / _samplingRate;
     }
 }

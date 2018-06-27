@@ -1,4 +1,5 @@
 ﻿
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -56,7 +57,24 @@ public class ToricComputing
             Ia.Add(k, alphaDouble);
         }
 
+        Ia = ClearDictionaryValues(Ia);
+
         return Ia;
+    }
+
+    private Dictionary<float, Intervall> ClearDictionaryValues(Dictionary<float, Intervall> ia)
+    {
+        //TODO out of sync error?
+        List<float> keys = new List<float>(ia.Keys);
+        foreach (float f in keys)
+        {
+            Intervall output;
+            if (ia.TryGetValue(f, out output) && output == null)
+            {
+               ia.Remove(f);  
+            }
+        }
+        return ia;
     }
 
     /**
@@ -107,6 +125,8 @@ public class ToricComputing
  *    @param distance the distance for which to calculate alpha for
  *    @param theta the angle for which to calculate alpha for
  *    @return alpha for the specified distance and theta value
+ *    
+ *    //TODO add both pi/2 - radiand and pi/2 + radiand 
  *                  
  */
     public float GetAlphaFromDistanceToB(float distance, float theta)
@@ -145,4 +165,14 @@ public class ToricComputing
 
         return alphaFix.angle();
     }
+
+    public static string FloatArrayToString(float[] array) {
+        string res = "";
+        foreach (float f in array)
+        {
+            res = String.Concat(res, ";" + f);
+        }
+        return res;
+    }
+
 }
