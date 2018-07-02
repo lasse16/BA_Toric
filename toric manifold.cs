@@ -54,10 +54,19 @@ public class Toricmanifold
         _alpha = new FixAngle(alpha);
         _phi = new FixAngle(phi);
         _theta = new FixAngle(theta);
+
         //Better way to get the camera?
         _main = Camera.main;
-        computeScale();
+        Vector2 scalefactors = ToricComputing.ComputeScale();
+        Sx = scalefactors[0];
+        Sy = scalefactors[1];
     }
+
+    /**
+     * overloaded constructor with theta and phi = 0
+     * 
+     * 
+     */
 
     public Toricmanifold(float alpha, GameObject target1, GameObject target2) : this(alpha, 0, 0, target1, target2)
     {
@@ -169,19 +178,6 @@ public class Toricmanifold
         Vector3 l = 0.5f * (dA2 + dB2);
         return Quaternion.LookRotation(l);
 
-    }
-
-    /**
-     * helps compute qTrans depending on the main cameras field of view
-     * https://gist.github.com/coastwise/5951291 (to get the horizontal fov from the vertical)
-     */
-    private void computeScale()
-    {
-        float VerticalfovAngleRAD = _main.fieldOfView * Mathf.Deg2Rad;
-
-        float HorizontalfovAngleRAD = 2 * Mathf.Atan(Mathf.Tan(VerticalfovAngleRAD / 2) * _main.aspect);
-        Sx = 1 / Mathf.Tan(HorizontalfovAngleRAD / 2);
-        Sy = 1 / Mathf.Tan(VerticalfovAngleRAD / 2);
     }
 
     /**

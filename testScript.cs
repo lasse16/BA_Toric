@@ -35,7 +35,7 @@ public class testScript : MonoBehaviour
     {
         //StartDebug();
         //StartCamera();
-        StartDistance();
+        StartComputing();
        
 
        
@@ -45,38 +45,30 @@ public class testScript : MonoBehaviour
 
     }
 
-    private void StartDistance()
+    private void StartComputing()
     {
-        //CHECK FOR EXTRA CLASS
+        
 
         ToricComputing tc = new ToricComputing(target1, target2);
         Dictionary<float, Intervall> alphas =  tc.getIntervalOfAcceptedAlpha(distanceToA,distanceToB);
 
-       
-
-        Intervall outInt;
-        float[] thetas = new float[alphas.Keys.Count];
-        alphas.Keys.CopyTo(thetas, 0);
-        theta = thetas[UnityEngine.Random.Range(0, thetas.Length)];
-
-        //DEBUG
-        foreach (float t in thetas)
+        foreach (KeyValuePair<float,Intervall> a in alphas)
         {
-            Intervall output;
-            alphas.TryGetValue(t, out output);
-            Debug.Log(t + ":" + output.Length() + "-");
-        }       
+            Debug.Log(a.ToString());
+        }
+
         //DEBUG
+        float[] keys = new float[alphas.Keys.Count];
+        alphas.Keys.CopyTo(keys,0);
+        theta = keys[UnityEngine.Random.Range(0, alphas.Keys.Count - 2)];
+        Intervall alphaRange;
+        alphas.TryGetValue(theta, out alphaRange);
+        alpha = alphaRange.getRandom();
         Debug.Log(theta);
-        Debug.Log(ToricComputing.FloatArrayToString(thetas));
-
-        alphas.TryGetValue(theta, out outInt);
-        alpha = outInt.getRandom();
-
-        //DEBUG
-        Debug.Log(outInt);
+        Debug.Log(alphaRange);
         Debug.Log(alpha);
-        
+
+
 
         Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
         test.SetDesiredPosition(screenPos1, screenPos2);

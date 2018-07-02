@@ -9,11 +9,12 @@ using UnityEngine;
 
 public class FixAngle
 {
-	private float _angle;
+    private float _angle;
+
 	
-	public FixAngle(float angle)
+	public FixAngle(float angle, float bound = 360)
 	{
-		_angle = angle % 360;
+		_angle = angle % bound;
 	}
 	
 	public float angle()

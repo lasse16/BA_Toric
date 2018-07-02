@@ -2,23 +2,36 @@
 using System.Collections.Generic;
 using UnityEngine;
 /**
- * a float intervall representation
+ * a float intervall representation with a lower and upper bound and a optional smapling rate
+ * The sampling rate means how many floats are going to be read out of this interval
+ * (e.g sampling rate = 2 => add two on the lower bound , then 2 on that value,
+ * then two again ... repeat , till you are at or above the upper bound)
  * 
- * 
- * 
- * 
- * 
- * 
+ * @author Lasse Haffke 
+ * @version 29.06.18
  */
 public class Intervall
 {
     private readonly float LOWERBOUND;
     private readonly float UPPERBOUND;
     private float _samplingRate;
+
+    //static interval for the degrees in a circle
     public static Intervall DegreeInterval = new Intervall(0, 360, 1);
 
-    public Intervall(float lBound, float uBound, float samplingRate = 0.5f)
+    //TODO better NaN handling
+    public Intervall(float lBound, float uBound, float samplingRate = 0.05f)
     {
+        if(float.IsNaN(lBound)){
+            lBound = 0;
+
+        }
+        if (float.IsNaN(uBound))
+        {
+            uBound = 0;
+
+        }
+        //ensure lower bound is smaller then the upper bound
         if (lBound > uBound)
         {
             LOWERBOUND = uBound;
@@ -27,32 +40,56 @@ public class Intervall
         else
         {
             LOWERBOUND = lBound;
-            UPPERBOUND = uBound; 
+            UPPERBOUND = uBound;
         }
 
         _samplingRate = samplingRate;
     }
 
+    /**
+     * return the lower bound
+     * @return the lower bound
+     */
     public float getLowerBound()
     {
         return LOWERBOUND;
     }
 
+    /**
+    * return the upper bound
+    * @return the upper bound
+    */
     public float getUpperBound()
     {
         return UPPERBOUND;
     }
 
+    /**
+    * return the sampling rate 
+    * @return the sampling rate
+    */
     public float getSamplingRate()
     {
         return _samplingRate;
     }
 
-    public Boolean isInside(float value)
+    /**
+     * returns true if the value is inside the interval(including lower bound, excluding upper bound)
+     * @param float value the value to check
+     * @return true if the value is inside
+     */
+    public Boolean IsInside(float value)
     {
         return LOWERBOUND <= value ^ value < UPPERBOUND;
     }
 
+    /**
+     * Returns a list of every value inside
+     * (e.g sampling rate = 2 => add two on the lower bound , then 2 on that value,
+     * then two again ... repeat , till you are at or above the upper bound)
+     * 
+     * @return a list of float values calculated by the process described above
+     */
     public List<float> getEveryValue()
     {
         List<float> every = new List<float>();
@@ -64,9 +101,14 @@ public class Intervall
         return every;
     }
 
+    /**
+     * returns the intersection of two intervals
+     * @param cut the first interval
+     * @return the resulting interval 
+     */
     public Intervall Intersect(Intervall cut)
     {
-        if (CheckIntersect(cut))
+        if (DoNotIntersect(cut))
         {
             if (cut.getLowerBound() <= LOWERBOUND)
             {
@@ -88,7 +130,11 @@ public class Intervall
         return null;
     }
 
-    private bool CheckIntersect(Intervall cut)
+    /**
+     * returns true if the intervals have no intersection
+     * 
+     */
+    private bool DoNotIntersect(Intervall cut)
     {
         return cut.getLowerBound() > UPPERBOUND || cut.getUpperBound() < LOWERBOUND;
     }
@@ -101,7 +147,7 @@ public class Intervall
         //DEBUG
         Debug.Log(values.Count);
         Debug.Log(key);
-        
+
         return values[key];
     }
 
