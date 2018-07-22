@@ -76,10 +76,11 @@ public class Toricmanifold
     *Calculates the WorldPosition from the field values of the object
     * @return the vector3 position in world coordinates
     * 
+    * TODO phi doesnt work | might have switched theta and phi => check coordinate system | alpha has next to no influence
     */
     public Vector3 ToWorldPosition()
     {
-        Vector3 C = new Vector3(0, 0, 0);
+        Vector3 C;
         float last = Mathf.Sin(_alpha.toRad() + _theta.toRad() / 2);
 
 
@@ -109,7 +110,7 @@ public class Toricmanifold
      * @param TiltAngle = 0 the optional tilt angle around the cameras forward vector
      * 
      * @return Quaternion the final camera orientation
-     * TODO check qTrans and qLook
+     * TODO check qTrans and qLook(mostly right)
      */
     public Quaternion ComputeOrientation(Vector3 camPos, float TiltAngle = 0)
     {
@@ -128,19 +129,20 @@ public class Toricmanifold
      * computes the rotation needed to place the targets at the desired screen positions
      * @return Quaternion with the  rotation
      * 
-     * TODO check if pixel or procent for position specification
-     */
+     * TODO check if pixel or procent for position specification //relative to camera (0.0) to (1,1)
+     **/
     private Quaternion computeLookAtTransition()
     {
 
-        Vector2 pO = new Vector2(0, 0);
+        Vector2 pO = Vector2.zero;
         Vector2 pM = new Vector2((pA.x + pB.x) / 2, (pA.y + pB.y) / 2);
-        Vector3 p3O = new Vector3(0, 0, 1);
+        Vector3 p3O = _main.ViewportToWorldPoint(Vector3.forward);
         Vector3.Normalize(p3O);
 
         //TODO correct way to calculate Vector3?
-        Vector3 p3M = new Vector3(pM.x / Sx, pM.y / Sy, 1);
+        Vector3 p3M = _main.ViewportToWorldPoint(new Vector3(pM.x / Sx, pM.y / Sy, 1));
         Vector3.Normalize(p3M);
+
         Vector3 m = Vector3.Cross(p3M, p3O);
         float angle = Vector3.Angle(p3M, p3O);
 
@@ -165,17 +167,16 @@ public class Toricmanifold
      */
     private Quaternion computeLookAt(Vector3 camPos)
     {
-        Vector3 dA = A - camPos;
-        Vector3 dB = B - camPos;
+        //TODO right way around ?
+        Vector3 dA = -1* (camPos - A);
+        Vector3 dB = -1* (camPos - B);
 
-        //Enough for ||CA||?
-        Vector3 dA2 = dA / dA.magnitude;
-        Vector3 dB2 = dB / dB.magnitude;
+       
 
-        //Vector3.Normalize(dA);
-        //Vector3.Normalize(dB);
+        dA = Vector3.Normalize(dA);
+        dB = Vector3.Normalize(dB);
 
-        Vector3 l = 0.5f * (dA2 + dB2);
+        Vector3 l = 0.5f * (dA + dB);
         return Quaternion.LookRotation(l);
 
     }
@@ -191,8 +192,16 @@ public class Toricmanifold
         pB = screenPos2;
     }
 
- 
 
+
+ 
+    //TESTMETHODS
+
+
+    public Quaternion testBasicLookAt(Vector3 campos)
+    {
+        return computeLookAt(campos);
+    }
 
 
  

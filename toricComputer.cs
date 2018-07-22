@@ -235,25 +235,130 @@ public class ToricComputing
      * TODO Everything
      * 
      */
-    public void getPositionFromVantage(float whichOne, Vector3 v){
+    public void getPositionFromVantage(float whichOne, Vector3 v, float deviationAngle){
 
         Vector3 targetPosition;
         if (whichOne == 1) targetPosition = A;
         else targetPosition = B;
 
-        //TODO proper distance along vectoor AB
-        Plane pBsmallerHalfPi = new Plane(AB, -1);
-        Plane pBHalfPi = new Plane(AB, 0);
-        Plane pBGreaterHalfPi = new Plane(AB, 1);
+        
+        Vector3 normedAB = AB.normalized;
+
+        Plane pBsmallerHalfPi = new Plane(AB, targetPosition - normedAB);
+        Plane pBHalfPi = new Plane(AB, targetPosition);
+        Plane pBGreaterHalfPi = new Plane(AB, targetPosition + normedAB);
 
         Vector3 prefferedVantageAngle = v;
         FixAngle beta = new FixAngle(Vector3.Angle(AB, prefferedVantageAngle), 180);
+        Cone vantageCone = new Cone(prefferedVantageAngle, deviationAngle, targetPosition);
+
+        Plane currentPlane = pBHalfPi;
+
+        switch (checkBetaForPlane(beta.angle()))
+        {
+            case -1:
+                currentPlane = pBsmallerHalfPi;
+                break;
+            case 0:
+                currentPlane = pBHalfPi;
+                break;
+            case 1:
+                currentPlane = pBGreaterHalfPi;
+                break;
+        }
+        
+
+        if (checkConicSectionIsEllipse(beta.angle(), vantageCone))
+        {
+            //conic section = ellipse
+            Vector3[] boundaryVectors = new Vector3[4] { vantageCone.getBoundaryVectorUp(), vantageCone.getBoundaryVectorDown(), vantageCone.getBoundaryVectorRight(), vantageCone.getBoundaryVectorRight()};
+            Vector3[] intersectionPoints = new Vector3[4];
+            int i = 0;
+            Vector3 majorAxis;
+            Vector3 minorAxis;
+
+            foreach (Vector3 boundaryVec in boundaryVectors)
+            {
+
+                float intersectDist;
+                currentPlane.Raycast(new Ray(targetPosition, boundaryVec), out intersectDist);
+                intersectionPoints[i] = boundaryVec * intersectDist;
+                i++;
+            }
+
+            //TODO Check if true for rotation under plane
+            Vector3 ellipseAxisUp = intersectionPoints[0] - intersectionPoints[1];
+            Vector3 ellipseAxisRight = intersectionPoints[2] - intersectionPoints[3];
+            if(ellipseAxisRight.magnitude < ellipseAxisUp.magnitude)
+            {
+                majorAxis = ellipseAxisUp;
+                minorAxis = ellipseAxisRight;
+            }
+            else
+            {
+                majorAxis = ellipseAxisRight;
+                minorAxis = ellipseAxisUp;
+            }
+
+            Vector3 middlePointEllipse = (intersectionPoints[0] + intersectionPoints[1]) / 2;
+
+            //DEBUG
+            //should be equal
+            Debug.Log(middlePointEllipse);
+            Debug.Log((intersectionPoints[2] + intersectionPoints[3]) / 2);
+
+            Ellipse possibleValueOnPlane = new Ellipse(majorAxis, minorAxis, middlePointEllipse);
+
+
+
+
+        }
+        else
+        {
+            //conic section = parabola or
+            //conic section = triangle
+        }
 
 
 
     }
-    
+
+    /**
+    * returns true if conic intersection with plane is an ellipse
+    * 
+    */
+    private bool checkConicSectionIsEllipse(float beta, Cone vantageCone)
+    {
+        switch (checkBetaForPlane(beta))
+        {
+            case -1:
+                return beta + vantageCone.getDiviationAngle() < 180;
+            case 0:
+                return false;
+            case 1:
+                return beta - vantageCone.getDiviationAngle() > 180;
+            default:
+                return false;
+
+        }
+
+    }
 
 
+    /**
+     * returns -1,0,1 for beta <90,90,>90
+     * 
+     */
+    private int checkBetaForPlane(float beta)
+    {
+        if(beta < 90)
+        {
+            return -1;
+        }else if (beta == 90)
+        {
+            return 0;
+        }
 
+        return 1;
+    }
 }

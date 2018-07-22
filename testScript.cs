@@ -34,32 +34,33 @@ public class testScript : MonoBehaviour
     public void Start()
     {
         //StartDebug();
-        //StartCamera();
-        StartComputing();
-       
+        StartCamera();
+        //StartComputing();
+        //testBasicLookAt();
+        //testBasicToWorldPosition();
 
-       
 
-       
-        
+
+
+
 
     }
 
     private void StartComputing()
     {
-        
+
 
         ToricComputing tc = new ToricComputing(target1, target2);
-        Dictionary<float, Intervall> alphas =  tc.getIntervalOfAcceptedAlpha(distanceToA,distanceToB);
+        Dictionary<float, Intervall> alphas = tc.getIntervalOfAcceptedAlpha(distanceToA, distanceToB);
 
-        foreach (KeyValuePair<float,Intervall> a in alphas)
+        foreach (KeyValuePair<float, Intervall> a in alphas)
         {
             Debug.Log(a.ToString());
         }
 
         //DEBUG
         float[] keys = new float[alphas.Keys.Count];
-        alphas.Keys.CopyTo(keys,0);
+        alphas.Keys.CopyTo(keys, 0);
         theta = keys[UnityEngine.Random.Range(0, alphas.Keys.Count - 2)];
         Intervall alphaRange;
         alphas.TryGetValue(theta, out alphaRange);
@@ -97,7 +98,7 @@ public class testScript : MonoBehaviour
 
     private void StartDebug()
     {
-         Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
+        Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
         test.SetDesiredPosition(screenPos1, screenPos2);
 
         Vector3 posTest = test.ToWorldPosition();
@@ -106,5 +107,30 @@ public class testScript : MonoBehaviour
 
         cube.transform.position = posTest;
         cube.transform.rotation = rotTest;
+    }
+
+    private void testBasicLookAt()
+    {
+        Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
+
+        Vector3 posTest = test.ToWorldPosition();
+        Quaternion lookAt = test.testBasicLookAt(posTest);
+
+        Camera _main = Camera.main;
+
+        _main.transform.position = posTest;
+        _main.transform.rotation = lookAt;
+    }
+
+
+    private void testBasicToWorldPosition()
+    {
+        Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
+
+        Vector3 posTest = test.ToWorldPosition();
+        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        cube.transform.position = posTest;
+
+
     }
 }
