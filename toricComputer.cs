@@ -287,6 +287,7 @@ public class ToricComputing
             }
 
             //TODO Check if true for rotation under plane
+            //check if Vector2 (should be)
             Vector3 ellipseAxisUp = intersectionPoints[0] - intersectionPoints[1];
             Vector3 ellipseAxisRight = intersectionPoints[2] - intersectionPoints[3];
             if(ellipseAxisRight.magnitude < ellipseAxisUp.magnitude)
@@ -310,7 +311,14 @@ public class ToricComputing
             Ellipse possibleValueOnPlane = new Ellipse(majorAxis, minorAxis, middlePointEllipse);
 
 
+            //intersection of vector AB and the chosen plane
+            Vector3 middlePointOfCirclePhi = targetPosition + checkBetaForPlane(beta.angle()) * AB.normalized;
 
+            Circle phiCircle = new Circle(middlePointOfCirclePhi, Mathf.Tan(beta.angle()), AB);
+            Vector3 phiZeroVector = middlePointOfCirclePhi - middlePointEllipse;
+
+        
+            phiCircle.IntersectEdge()
 
         }
         else
@@ -322,6 +330,7 @@ public class ToricComputing
 
 
     }
+
 
     /**
     * returns true if conic intersection with plane is an ellipse
