@@ -9,9 +9,17 @@ using UnityEngine;
 */
 public class testScript : MonoBehaviour
 {
+    [Range(1,179)]
     public float alpha;
+    private float priorAlpha;
+
+    [Range (0,360)]
     public float theta;
+    private float priorTheta;
+
+    [Range(-180, 180)]
     public float phi;
+    private float priorPhi;
     public float tilt;
     public GameObject target1;
     public GameObject target2;
@@ -34,10 +42,13 @@ public class testScript : MonoBehaviour
     public void Start()
     {
         //StartDebug();
-        StartCamera();
+        // StartCamera();
         //StartComputing();
         //testBasicLookAt();
-        //testBasicToWorldPosition();
+        priorAlpha = alpha;
+        priorTheta = theta;
+        priorPhi = phi;
+        testBasicToWorldPosition();
 
 
 
@@ -129,8 +140,14 @@ public class testScript : MonoBehaviour
 
         Vector3 posTest = test.ToWorldPosition();
         GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        cube.name = "cube" + alpha + ";" + theta + ";" + phi;
         cube.transform.position = posTest;
 
 
+    }
+
+     void Update()
+    {
+        if (priorAlpha != alpha || priorPhi != phi || priorTheta != theta) Start();
     }
 }

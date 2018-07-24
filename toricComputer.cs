@@ -314,11 +314,12 @@ public class ToricComputing
             //intersection of vector AB and the chosen plane
             Vector3 middlePointOfCirclePhi = targetPosition + checkBetaForPlane(beta.angle()) * AB.normalized;
 
-            Circle phiCircle = new Circle(middlePointOfCirclePhi, Mathf.Tan(beta.angle()), AB);
-            Vector3 phiZeroVector = middlePointOfCirclePhi - middlePointEllipse;
+            float circleRadius = Mathf.Tan(beta.angle());
+            Ellipse phiCircle = new Ellipse(Vector3.up * circleRadius * 2, Vector3.up * circleRadius * 2, middlePointOfCirclePhi);
+            
 
         
-            phiCircle.IntersectEdge()
+            
 
         }
         else

@@ -25,7 +25,7 @@ public class Toricmanifold
     //target positions
     private Vector3 A;
     private Vector3 B;
-    private Vector3 AB;
+    private Vector3 vecAB;
 
     //scale factors for Transition matrix
     private float Sx;
@@ -38,7 +38,7 @@ public class Toricmanifold
     /**
      *Intialising all fields
      * @param alpha the angle between the camera and the two targets
-     * @param theta horizontal rotation angle 
+     * @param theta horizontal rotation angle |gets automatically clamped between 1 and getMaxTheta()
      * @param phi   vertical rotation angle 
      * @param target1   first target
      * @param target2   second target
@@ -49,10 +49,11 @@ public class Toricmanifold
         _target2 = target2;
         A = _target1.transform.position;
         B = _target2.transform.position;
-        AB = A - B;
+        vecAB = A - B;
 
         _alpha = new FixAngle(alpha);
         _phi = new FixAngle(phi);
+        theta = Mathf.Clamp(theta, 1, getMaxTheta());
         _theta = new FixAngle(theta);
 
         //Better way to get the camera?
@@ -76,31 +77,31 @@ public class Toricmanifold
     *Calculates the WorldPosition from the field values of the object
     * @return the vector3 position in world coordinates
     * 
-    * TODO phi doesnt work | might have switched theta and phi => check coordinate system | alpha has next to no influence
     */
     public Vector3 ToWorldPosition()
     {
         Vector3 C;
-        float last = Mathf.Sin(_alpha.toRad() + _theta.toRad() / 2);
+        float last = (vecAB.magnitude * Mathf.Sin(_alpha.toRad() + _theta.toRad() / 2))/ Mathf.Sin(_alpha.toRad());
 
 
-        Vector3 n = -AB;
-
+        Vector3 n = -vecAB;
+       
         //n.projectZ
-        Vector2 n2 = new Vector2(n.x, n.y);
+        Vector2 n2 = new Vector2(n.x, n.z);
 
         //n2.rotate90();
         float tmp = n2[0];
         n2[0] = -n2[1];
         n2[1] = tmp;
 
-        Vector3 z = new Vector3(n2.x, n2.y, 0);
-        Vector3.Normalize(z);
+        Vector3 z = new Vector3(n2.x, 0, n2.y);
+       
+        
         Vector3 t = Vector3.Cross(z, n);
 
         Quaternion qT = Quaternion.AngleAxis(_theta.angle(), t);
-        Quaternion qP = Quaternion.AngleAxis(_phi.angle(), AB);
-        C = A + (qP * qT * AB) * last;
+        Quaternion qP = Quaternion.AngleAxis(_phi.angle(), n);
+        C = A + (qP * qT * vecAB) * last / vecAB.magnitude;
         return C;
     }
 
@@ -190,6 +191,12 @@ public class Toricmanifold
     {
         pA = screenPos1;
         pB = screenPos2;
+    }
+
+    //Returns the maximum value of theta for a given alpha
+    public float getMaxTheta()
+    {
+        return (2 * (Mathf.PI - _alpha.toRad())) * Mathf.Rad2Deg;
     }
 
 

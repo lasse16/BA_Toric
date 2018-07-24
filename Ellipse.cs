@@ -57,13 +57,12 @@ internal class Ellipse : conicSection
         Vector3 normalOfPlaneOfEllipse = Vector3.Cross(_majorAxis, _minorAxis);
         if (Vector3.Dot(normalOfPlaneOfEllipse, pointToTest) == 0)
         {
-            Vector3 normedPos = pointToTest - _middlePointEllipse;
-            float distToFoci1 = Mathf.Sqrt(Mathf.Pow((normedPos.x - e), 2) + Mathf.Pow(normedPos.y, 2));
-            float distToFoci2 = Mathf.Sqrt(Mathf.Pow((normedPos.x + e), 2) + Mathf.Pow(normedPos.y, 2));
+            Vector2 distanceToFoci = calculateDistanceToFoci(pointToTest);
 
-            return distToFoci1 + distToFoci2 <= _majorAxis.magnitude;
+            return distanceToFoci[0] + distanceToFoci[1] <= _majorAxis.magnitude;
         }
         else return false;
+
 
     }
 
@@ -71,4 +70,15 @@ internal class Ellipse : conicSection
     {
         throw new NotImplementedException();
     }
+
+    private Vector2 calculateDistanceToFoci(Vector3 pointToTest)
+    {
+        Vector3 normedPos = pointToTest - _middlePointEllipse;
+        float distToFoci1 = Mathf.Sqrt(Mathf.Pow((normedPos.x - e), 2) + Mathf.Pow(normedPos.y, 2));
+        float distToFoci2 = Mathf.Sqrt(Mathf.Pow((normedPos.x + e), 2) + Mathf.Pow(normedPos.y, 2));
+
+        return new Vector2(distToFoci1, distToFoci2);
+    }
+
+    
 }
