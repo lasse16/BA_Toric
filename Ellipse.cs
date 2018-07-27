@@ -1,49 +1,61 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
+/**
+ * 
+ * class for a 2D ellipse centered at 0,0 with the major axis pointing up - y direction, can be recalculated to a 3D ellipse
+ * 
+ */
 internal class Ellipse : conicSection
 {
     //TODO Check 3D
-    private Vector3 _majorAxis;
-    private Vector3 _minorAxis;
+    private Vector3 _orientation;
+    private Vector2 _majorAxis;
+    private Vector2 _minorAxis;
     private Vector3 _middlePointEllipse;
-    private Vector3[] _vertices;
-    private Vector3 _foci1;
-    private Vector3 _foci2;
+    private Vector2[] _vertices;
+    private Vector2 _foci1;
+    private Vector2 _foci2;
     private float e;
 
     public Ellipse(Vector3 majorAxis, Vector3 minorAxis, Vector3 middlePointEllipse)
     {
-        _majorAxis = majorAxis;
-        _minorAxis = minorAxis;
-       _middlePointEllipse = middlePointEllipse;
+        if (Vector3.Dot(majorAxis, minorAxis) == 0)
+        {
+            _orientation = majorAxis;
+            _majorAxis = majorAxis.magnitude * Vector2.up;
+            _minorAxis = minorAxis.magnitude * Vector2.right;
+            _middlePointEllipse = middlePointEllipse;
 
-        calculateVertices();
-        FindFoci();
+            calculateVertices();
+            FindFoci();
+        }
+        throw new ArgumentException(); 
     }
 
     private void calculateVertices()
     {
-        Vector3[] res = new Vector3[4];
+        Vector2[] res = new Vector2[4];
 
-        //TODO check if correct in 3D
-        Vector3 S1 = _middlePointEllipse + _majorAxis / 2;
-        Vector3 S2 = _middlePointEllipse - _majorAxis / 2;
-        Vector3 S3 = _middlePointEllipse + _minorAxis / 2;
-        Vector3 S4 = _middlePointEllipse - _minorAxis / 2;
+        
+        Vector2 S1 = _majorAxis / 2;
+        Vector2 S2 = -_majorAxis / 2;
+        Vector2 S3 = _minorAxis / 2;
+        Vector2 S4 = -_minorAxis / 2;
 
         res[0] = S1;
         res[1] = S2;
         res[2] = S3;
         res[3] = S4;
 
-        _vertices =  res;
+        _vertices = res;
     }
 
     private void FindFoci()
     {
-        float a = _majorAxis.magnitude/2;
-        float b = _minorAxis.magnitude/2;
+        float a = _majorAxis.magnitude / 2;
+        float b = _minorAxis.magnitude / 2;
 
         float fociDistance = Mathf.Sqrt(Mathf.Pow(a, 2) - Mathf.Pow(b, 2));
 
@@ -66,10 +78,25 @@ internal class Ellipse : conicSection
 
     }
 
-    public Vector3 IntersectEdge(conicSection otherForm)
+    /**Returns the intersection points of a ellipse at 0,0 and a circle in the same plane
+     * 
+     * 
+     */
+    public List<Vector2> getCircleIntersections(Vector3 midPointCircle, float radius)
     {
+        Vector3 normedCircleMid = midPointCircle - _middlePointEllipse;
+        float angle = Vector3.Angle(normedCircleMid, _orientation);
+        Quaternion rotation = Quaternion.AngleAxis(angle, Vector3.Cross(_majorAxis, _minorAxis));
+
+
         throw new NotImplementedException();
+
+
+
+
+
     }
+        
 
     private Vector2 calculateDistanceToFoci(Vector3 pointToTest)
     {

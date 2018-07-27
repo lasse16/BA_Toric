@@ -214,11 +214,22 @@ public class ToricComputing
     public static Vector2 ComputeScale()
     {
         Camera _main = Camera.main;
+        /**
+         * my version
+        
         float VerticalfovAngleRAD = _main.fieldOfView * Mathf.Deg2Rad;
 
-        float HorizontalfovAngleRAD = 2 * Mathf.Atan(Mathf.Tan(VerticalfovAngleRAD / 2) * _main.aspect);
-        float Sx = 1 / Mathf.Tan(HorizontalfovAngleRAD / 2);
+        float HorizontalfovAngleRAD = Mathf.Atan(Mathf.Tan(VerticalfovAngleRAD / 2) * _main.aspect);
+        float Sx = 1 / Mathf.Tan(HorizontalfovAngleRAD);
         float Sy = 1 / Mathf.Tan(VerticalfovAngleRAD / 2);
+        */
+
+        //lino version
+        float VerticalfovAngleRAD = _main.fieldOfView * Mathf.Deg2Rad;
+        float tanY = Mathf.Tan(VerticalfovAngleRAD / 2);
+        float tanX = tanY * _main.aspect;
+        float Sx = 1 / tanX;
+        float Sy = 1 / tanY;
 
         return new Vector2(Sx, Sy);
     }

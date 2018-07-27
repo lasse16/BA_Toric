@@ -117,6 +117,7 @@ public class Toricmanifold
     {
         //main camera direction
         Quaternion qLook = computeLookAt(camPos);
+
         //positions the targets at the desired screen positions
         Quaternion qTrans = computeLookAtTransition();
 
@@ -134,7 +135,25 @@ public class Toricmanifold
      **/
     private Quaternion computeLookAtTransition()
     {
+        
+		//Lino Version
+	
+          Vector3  forward, up;
+		{
 
+            Vector3 pA3 = Vector3.Normalize(GetVectorInCameraSpace(pA));
+            Vector3 pB3 = Vector3.Normalize(GetVectorInCameraSpace(pB));
+			
+			up = Vector3.Cross(pB3,pA3).normalized;		
+			forward = (pA3 + pB3).normalized;
+			
+		}
+		return Quaternion.LookRotation(forward,up);
+         
+
+        /**
+         * 
+         * 
         Vector2 pO = Vector2.zero;
         Vector2 pM = new Vector2((pA.x + pB.x) / 2, (pA.y + pB.y) / 2);
         Vector3 p3O = _main.ViewportToWorldPoint(Vector3.forward);
@@ -148,6 +167,7 @@ public class Toricmanifold
         float angle = Vector3.Angle(p3M, p3O);
 
         return Quaternion.AngleAxis(angle, m);
+        */
     }
 
     /**
@@ -197,6 +217,13 @@ public class Toricmanifold
     public float getMaxTheta()
     {
         return (2 * (Mathf.PI - _alpha.toRad())) * Mathf.Rad2Deg;
+    }
+
+    private Vector3 GetVectorInCameraSpace(Vector2 vectorToCam)
+    {
+        Vector3 vec;
+            vec = new Vector3(vectorToCam.x / Sx, vectorToCam.y / Sy, 1);
+        return vec;
     }
 
 

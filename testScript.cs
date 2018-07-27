@@ -20,7 +20,11 @@ public class testScript : MonoBehaviour
     [Range(-180, 180)]
     public float phi;
     private float priorPhi;
+
+    [Range(-90,90)]
     public float tilt;
+    private float priorTilt;
+
     public GameObject target1;
     public GameObject target2;
 
@@ -42,13 +46,13 @@ public class testScript : MonoBehaviour
     public void Start()
     {
         //StartDebug();
-        // StartCamera();
+        StartCamera();
         //StartComputing();
         //testBasicLookAt();
         priorAlpha = alpha;
         priorTheta = theta;
         priorPhi = phi;
-        testBasicToWorldPosition();
+        
 
 
 
@@ -148,6 +152,6 @@ public class testScript : MonoBehaviour
 
      void Update()
     {
-        if (priorAlpha != alpha || priorPhi != phi || priorTheta != theta) Start();
+        if (priorAlpha != alpha || priorPhi != phi || priorTheta != theta || priorTilt != tilt) Start();
     }
 }
