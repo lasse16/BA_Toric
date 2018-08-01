@@ -22,15 +22,6 @@ public class Intervall
     //TODO better NaN handling
     public Intervall(float lBound, float uBound, float samplingRate = 0.05f)
     {
-        if(float.IsNaN(lBound)){
-            lBound = 0;
-
-        }
-        if (float.IsNaN(uBound))
-        {
-            uBound = 0;
-
-        }
         //ensure lower bound is smaller then the upper bound
         if (lBound > uBound)
         {
@@ -136,7 +127,7 @@ public class Intervall
      */
     private bool DoNotIntersect(Intervall cut)
     {
-        return cut.getLowerBound() > UPPERBOUND || cut.getUpperBound() < LOWERBOUND;
+        return cut == null || cut.getLowerBound() > UPPERBOUND || cut.getUpperBound() < LOWERBOUND;
     }
 
     public float getRandom()
@@ -144,9 +135,7 @@ public class Intervall
         List<float> values = getEveryValue();
         int key = UnityEngine.Random.Range(0, values.Count);
 
-        //DEBUG
-        Debug.Log(values.Count);
-        Debug.Log(key);
+
 
         return values[key];
     }
@@ -158,6 +147,16 @@ public class Intervall
 
     public float Length()
     {
+        return (UPPERBOUND - LOWERBOUND);
+    }
+
+    public float normedLength()
+    {
         return (UPPERBOUND - LOWERBOUND) / _samplingRate;
+    }
+
+    public Vector2 toVector()
+    {
+        return new Vector2(LOWERBOUND, UPPERBOUND);
     }
 }

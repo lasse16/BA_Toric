@@ -27,9 +27,6 @@ public class Toricmanifold
     private Vector3 B;
     private Vector3 vecAB;
 
-    //scale factors for Transition matrix
-    private float Sx;
-    private float Sy;
 
     //desired screen position 
     private Vector2 pA;
@@ -58,9 +55,7 @@ public class Toricmanifold
 
         //Better way to get the camera?
         _main = Camera.main;
-        Vector2 scalefactors = ToricComputing.ComputeScale();
-        Sx = scalefactors[0];
-        Sy = scalefactors[1];
+        
     }
 
     /**
@@ -141,8 +136,8 @@ public class Toricmanifold
           Vector3  forward, up;
 		{
 
-            Vector3 pA3 = Vector3.Normalize(GetVectorInCameraSpace(pA));
-            Vector3 pB3 = Vector3.Normalize(GetVectorInCameraSpace(pB));
+            Vector3 pA3 = Vector3.Normalize(ToricComputing.GetVectorInCameraSpace(pA));
+            Vector3 pB3 = Vector3.Normalize(ToricComputing.GetVectorInCameraSpace(pB));
 			
 			up = Vector3.Cross(pB3,pA3).normalized;		
 			forward = (pA3 + pB3).normalized;
@@ -188,7 +183,6 @@ public class Toricmanifold
      */
     private Quaternion computeLookAt(Vector3 camPos)
     {
-        //TODO right way around ?
         Vector3 dA = -1* (camPos - A);
         Vector3 dB = -1* (camPos - B);
 
@@ -218,14 +212,6 @@ public class Toricmanifold
     {
         return (2 * (Mathf.PI - _alpha.toRad())) * Mathf.Rad2Deg;
     }
-
-    private Vector3 GetVectorInCameraSpace(Vector2 vectorToCam)
-    {
-        Vector3 vec;
-            vec = new Vector3(vectorToCam.x / Sx, vectorToCam.y / Sy, 1);
-        return vec;
-    }
-
 
 
  

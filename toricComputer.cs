@@ -19,6 +19,7 @@ public class ToricComputing
     private float Sy;
 
     private float _radius;
+    private float _frameRadius = 0.2f;
 
     public ToricComputing(GameObject target1, GameObject target2) { 
         _target1 = target1;
@@ -35,7 +36,7 @@ public class ToricComputing
   * @param distanceToA a vector2 in the form [min. Distance to A, max. DIstance to A]
   * @param distanceToB a vector2 in the form [min. Distance to B, max. DIstance to B]
   * 
-  * @return a Dictionary with an interval of accepted alpha values for each theta key
+  * @return a Dictionary with an interval of accepted alpha values for each theta key in RADIANS
   */
 
     public Dictionary<float, Intervall> getIntervalOfAcceptedAlpha(Vector2 distanceToA, Vector2 distanceToB)
@@ -59,6 +60,7 @@ public class ToricComputing
             IaB.TryGetValue(k, out alphasForThetaB);
 
             Intervall alphaDouble = alphasForThetaA.Intersect(alphasForThetaB);
+            
             Ia.Add(k, alphaDouble);
         }
 
@@ -85,21 +87,23 @@ public class ToricComputing
      * Calculating the alpha interval for each theta value based on the distance to target B
      * 
      * later used in getIntervalOfAcceptedAlpha()
-     * TODO limit theta values from 3.2 exact distance to B paragraph
-     * TODO proper interval bounds => pi/2 + - ....
-     * 
      */
-    private Dictionary<float, Intervall> getIntervalFromB(float minDistanceToB, float maxDistanceToB)
+    public Dictionary<float, Intervall> getIntervalFromB(float minDistanceToB, float maxDistanceToB)
     {
         
-        Intervall possibleThetaValues = Intervall.DegreeInterval;
+        Intervall possibleThetaValues = new Intervall(1, 359,1);
         Dictionary<float, Intervall> IaB = new Dictionary<float, Intervall>();
 
         foreach (float t in possibleThetaValues.getEveryValue())
         {
-            float AlphaMinB = GetAlphaFromDistanceToB(minDistanceToB, t);
-            float AlphaMaxB = GetAlphaFromDistanceToB(maxDistanceToB, t);
-            Intervall alphaInterval = new Intervall(AlphaMinB, AlphaMaxB);
+            float[] AlphaMinB = GetAlphaFromDistanceToB(minDistanceToB, t);
+            float[] AlphaMaxB = GetAlphaFromDistanceToB(maxDistanceToB, t);
+            float minAlpha = Mathf.Min(Mathf.Min(AlphaMinB), Mathf.Min(AlphaMaxB));
+            float maxAlpha = Mathf.Max(Mathf.Max(AlphaMinB), Mathf.Max(AlphaMaxB));
+
+
+           
+            Intervall alphaInterval = new Intervall(minAlpha, maxAlpha);
             IaB.Add(t, alphaInterval);
         }
 
@@ -114,13 +118,15 @@ public class ToricComputing
     */
     private Dictionary<float, Intervall> getIntervalFromA(float minDistanceToA, float maxDistanceToA)
     {
-        Intervall possibleThetaValues = Intervall.DegreeInterval;
+        Intervall possibleThetaValues = new Intervall(1,359,1);
         Dictionary<float, Intervall> IaA = new Dictionary<float, Intervall>();
 
         foreach (float t in possibleThetaValues.getEveryValue())
         {
             float AlphaMinA = GetAlphaFromDistanceToA(minDistanceToA, t);
             float AlphaMaxA = GetAlphaFromDistanceToA(maxDistanceToA, t);
+            AlphaMinA = Mathf.Clamp(AlphaMinA, 1, 359);
+            AlphaMaxA = Mathf.Clamp(AlphaMaxA, 1, 359);
             Intervall alphaInterval = new Intervall(AlphaMinA, AlphaMaxA);
             IaA.Add(t, alphaInterval);
         }
@@ -133,24 +139,36 @@ public class ToricComputing
  *    @param theta the angle for which to calculate alpha for
  *    @return alpha for the specified distance and theta value
  *    
- *    //TODO add both pi/2 - radiand and pi/2 + radiand 
- *    //FIX NaN interval bound
- *                  
+ *     
+ *    //TODO find error in formula     
+ *    
  */
-    public float GetAlphaFromDistanceToB(float distance, float theta)
+    public float[] GetAlphaFromDistanceToB(float distance, float theta)
     {
-        float acos = Mathf.Acos(AB.magnitude / distance * Mathf.Sin(theta / 2));
-        float alphaMINUS = Mathf.PI / 2 - acos;
-
+        float[] res = new float[2];
+        
         if (distance <= AB.magnitude)
         {
+            Mathf.Clamp(theta, 1, 2 * Mathf.Sin(AB.magnitude / distance));
+            float acosTest = Mathf.Clamp(AB.magnitude / distance * Mathf.Sin(theta * Mathf.Deg2Rad / 2), -1, 1);
+            float acos = 0;
+            if (acosTest != 0) acos = Mathf.Acos(acosTest);
+            float alphaMINUS = Mathf.PI / 2 - acos;
+            res[0] = alphaMINUS * Mathf.Rad2Deg;
             float alphaPLUS = Mathf.PI / 2 + acos;
-            if (!float.IsNaN(alphaPLUS)) return alphaPLUS;
-
-            return alphaMINUS;
+            res[1] = alphaPLUS * Mathf.Rad2Deg;
         }
-
-        return alphaMINUS;
+        else
+        {
+            float acosTest = Mathf.Clamp(AB.magnitude / distance * Mathf.Sin(theta * Mathf.Deg2Rad / 2), -1, 1);
+            float acos = 0;
+            if (acosTest != 0) acos = Mathf.Acos(acosTest);
+            float alpha = Mathf.PI / 2 - acos;
+            res[0] = alpha * Mathf.Rad2Deg;
+            res[1] = float.NaN;
+        }
+      
+        return res;
     }
 
     /**
@@ -158,7 +176,7 @@ public class ToricComputing
   *    
   *    @param distance the distance for which to calculate alpha for
   *    @param theta the angle for which to calculate alpha for
-  *    @return alpha for the specified distance and theta value
+  *    @return alpha for the specified distance and theta value DEGREES
   *     
   */
     public float GetAlphaFromDistanceToA(float distance, float theta)
@@ -170,9 +188,7 @@ public class ToricComputing
         float bottom2 = Mathf.Pow(AB.magnitude, 2) + Mathf.Pow(distance, 2);
         float bottom = Mathf.Sqrt(bottom2 - bottom1);
 
-        FixAngle alphaFix = new FixAngle(Mathf.Acos(top / bottom));
-
-        return alphaFix.angle();
+        return (Mathf.Acos(top / bottom)* Mathf.Rad2Deg);
     }
 
     public static string FloatArrayToString(float[] array) {
@@ -189,10 +205,11 @@ public class ToricComputing
      * @param boundingSphereRadius the radius of the enclosing sphere
      * @return an interval of distance to the target
      * 
-     * TODO target selection?
      */
-    public Intervall DistanceFromProjectedSize(Vector2 sizeConstraint, float boundingSphereRadius)
+    public Intervall DistanceFromProjectedSize(Vector2 sizeConstraint, float boundingSphereRadius , GameObject target)
     {
+        Camera.main.transform.LookAt(target.transform);
+
         float minSize = sizeConstraint[0];
         float maxSize = sizeConstraint[1];
         float _radius = boundingSphereRadius;
@@ -381,5 +398,104 @@ public class ToricComputing
         }
 
         return 1;
+    }
+
+
+    /**
+     * Returns an interval of alpha values based on frames
+     * inside which the targets can be projected.
+     * 
+     * @param desPosA the desired  onscreen position of target A around the frame is going to be constructed
+     * @param desPosB the desired  onscreen position of target B around the frame is going to be constructed
+     * @return a interval of accepted alpha values in degrees
+     * 
+     */
+
+    public Intervall getAlphaIntervalFromOnscreenPositions(Vector2 desPosA, Vector2 desPosB)
+    {
+        List<Vector2> verticesFrameTargetA = getFrameTarget(desPosA);
+        List<Vector2> verticesFrameTargetB = getFrameTarget(desPosB);
+
+        
+
+        List<Vector3> VerticesInCamSpaceA = new List<Vector3>();
+        List<Vector3> VerticesInCamSpaceB = new List<Vector3>();
+        foreach (Vector2 vec in verticesFrameTargetA)
+        {
+            Vector3 inCamSpace = GetVectorInCameraSpace(vec);
+            VerticesInCamSpaceA.Add(inCamSpace);
+            
+        }
+        foreach (Vector2 vec in verticesFrameTargetB)
+        {
+            Vector3 inCamSpace = GetVectorInCameraSpace(vec);
+            VerticesInCamSpaceB.Add(inCamSpace);
+        }
+
+
+
+        List<float> alphaValues = new List<float>();
+
+        foreach (Vector3 pA in VerticesInCamSpaceA)
+        {
+
+            foreach (Vector3 pB in VerticesInCamSpaceB)
+            {
+                float alpha = Vector3.Angle(pA, pB);
+                alphaValues.Add(alpha);
+            }
+        }
+
+
+
+        return new Intervall(Mathf.Min(alphaValues.ToArray()), Mathf.Max(alphaValues.ToArray()));
+    }
+    
+
+    public static Vector3 GetVectorInCameraSpace(Vector2 vectorToCam)
+    {
+        Vector2 scaleFactors = ComputeScale();
+        float Sx = scaleFactors[0];
+        float Sy = scaleFactors[1];
+        Vector3 vec;
+        vec = new Vector3(vectorToCam.x / Sx, vectorToCam.y / Sy, 1);
+        return vec;
+    }
+
+    //creates a list of vertices belonging to an octagon around a target 
+    private List<Vector2> getFrameTarget(Vector2 desPosTarget)
+    {
+        List<Vector2> res = new List<Vector2>();
+        for (int i = 0; i < 8; i++)
+        {
+            float angle = 2* Mathf.PI / 8;
+            Vector2 axis =  rotateVector2(Vector2.up, angle * i);
+            Vector2 onscreenVertex = desPosTarget + axis * _frameRadius;
+            
+            res.Add(new Vector2(Mathf.Clamp(onscreenVertex.x,-1,1),Mathf.Clamp(onscreenVertex.y,-1,1)));
+        }
+
+        return res;
+    }
+
+    private Vector2 rotateVector2(Vector2 v, float angle)
+    {
+        float sin = Mathf.Sin(angle);
+        float cos = Mathf.Cos(angle);
+
+        float tx = v.x;
+        float ty = v.y;
+        v.x = (cos * tx) - (sin * ty);
+        v.y = (sin * tx) + (cos * ty);
+        return v;
+    }
+
+
+
+    //Test methods
+    public float testDistanceFromA(float distance, float theta)
+    {
+        return GetAlphaFromDistanceToA(distance, theta);
+
     }
 }

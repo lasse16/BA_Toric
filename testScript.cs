@@ -39,6 +39,9 @@ public class testScript : MonoBehaviour
     [Tooltip("Desired screen position for Target B")]
     public Vector2 screenPos2;
 
+    public Vector2 sizeToReachA;
+    public Vector2 sizeToReachB;
+
     /**
      * Creates either a cube or a camera at the calculated position with the given location
      * 
@@ -46,9 +49,11 @@ public class testScript : MonoBehaviour
     public void Start()
     {
         //StartDebug();
-        StartCamera();
-        //StartComputing();
-        //testBasicLookAt();
+        //StartCamera();
+        StartComputing();
+        //testGetAlphaFromDistanceB();
+        //testIntervalFromOnscreenPos();
+        //testIntervalFromB();
         priorAlpha = alpha;
         priorTheta = theta;
         priorPhi = phi;
@@ -66,7 +71,11 @@ public class testScript : MonoBehaviour
 
 
         ToricComputing tc = new ToricComputing(target1, target2);
-        Dictionary<float, Intervall> alphas = tc.getIntervalOfAcceptedAlpha(distanceToA, distanceToB);
+        Vector2 projectedSizeA = tc.DistanceFromProjectedSize(sizeToReachA, 0.5f, target1).toVector();
+        Vector2 projectedSizeB = tc.DistanceFromProjectedSize(sizeToReachB, 0.5f, target1).toVector();
+        //DEBUG
+        Debug.Log(projectedSizeA + ";" + projectedSizeB);
+        Dictionary<float, Intervall> alphas = tc.getIntervalOfAcceptedAlpha(projectedSizeA, projectedSizeB);
 
         foreach (KeyValuePair<float, Intervall> a in alphas)
         {
@@ -86,15 +95,7 @@ public class testScript : MonoBehaviour
 
 
 
-        Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
-        test.SetDesiredPosition(screenPos1, screenPos2);
-
-        Vector3 posTest = test.ToWorldPosition();
-        Quaternion rotTest = test.ComputeOrientation(posTest, tilt);
-        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-
-        cube.transform.position = posTest;
-        cube.transform.rotation = rotTest;
+        StartDebug();
     }
 
     private void StartCamera()
@@ -122,35 +123,82 @@ public class testScript : MonoBehaviour
 
         cube.transform.position = posTest;
         cube.transform.rotation = rotTest;
+        cube.name = alpha + " : " + theta + " : " + phi;
+
+        //DEBUG
+        Debug.Log((posTest - target1.transform.position).magnitude);
+        Debug.Log((posTest - target2.transform.position).magnitude);
     }
 
-    private void testBasicLookAt()
+    private void testGetAlphaFromDistanceA()
     {
-        Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
+        ToricComputing tc = new ToricComputing(target1, target2);
+        float alphaTestMin = tc.testDistanceFromA(distanceToA[0], theta);
+        float alphaTestMax = tc.testDistanceFromA(distanceToA[1], theta);
 
+        Toricmanifold test = new Toricmanifold(alphaTestMax, theta, phi, target1, target2);
         Vector3 posTest = test.ToWorldPosition();
-        Quaternion lookAt = test.testBasicLookAt(posTest);
-
-        Camera _main = Camera.main;
-
-        _main.transform.position = posTest;
-        _main.transform.rotation = lookAt;
-    }
-
-
-    private void testBasicToWorldPosition()
-    {
-        Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
-
-        Vector3 posTest = test.ToWorldPosition();
+        Quaternion rotTest = test.ComputeOrientation(posTest, tilt);
         GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        cube.name = "cube" + alpha + ";" + theta + ";" + phi;
-        cube.transform.position = posTest;
 
+        //DEBUG
+        Debug.Log("distance: " + (posTest - target1.transform.position).magnitude);
+
+        cube.transform.position = posTest;
+        cube.transform.rotation = rotTest;
+    }
+
+    private void testGetAlphaFromDistanceB()
+    {
+        ToricComputing tc = new ToricComputing(target1, target2);
+        float[] alphaTestMin = tc.GetAlphaFromDistanceToB(distanceToB[0], theta);
+        float[] alphaTestMax = tc.GetAlphaFromDistanceToB(distanceToB[1], theta);
+
+        float minAlpha = Mathf.Min(Mathf.Min(alphaTestMin), Mathf.Min(alphaTestMax));
+        float maxAlpha = Mathf.Max(Mathf.Max(alphaTestMin), Mathf.Max(alphaTestMax));
+        Intervall alphaInterval = new Intervall(minAlpha, maxAlpha);
+        alpha = alphaInterval.getRandom();
+
+        //DEBUG
+        Debug.Log(minAlpha);
+        Debug.Log(maxAlpha);
+
+        StartDebug();
+    }
+
+    private void testIntervalFromOnscreenPos()
+    {
+        ToricComputing tc = new ToricComputing(target1, target2);
+        Intervall alphaTest = tc.getAlphaIntervalFromOnscreenPositions(screenPos1, screenPos2);
+
+        
+
+        alpha = alphaTest.getRandom();
+
+        StartCamera();
 
     }
 
-     void Update()
+    private void testIntervalFromB()
+    {
+        ToricComputing tc = new ToricComputing(target1, target2);
+        Dictionary <float,Intervall> alphas = tc.getIntervalFromB(screenPos2.x,screenPos2.y);
+
+       
+        float[] keys = new float[alphas.Keys.Count];
+        alphas.Keys.CopyTo(keys, 0);
+        theta = keys[UnityEngine.Random.Range(0, alphas.Keys.Count - 2)];
+        Intervall alphaRange;
+        alphas.TryGetValue(theta, out alphaRange);
+        alpha = alphaRange.getRandom();
+
+
+        StartCamera();
+    }
+
+
+
+    void Update()
     {
         if (priorAlpha != alpha || priorPhi != phi || priorTheta != theta || priorTilt != tilt) Start();
     }
