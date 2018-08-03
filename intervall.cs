@@ -159,4 +159,14 @@ public class Intervall
     {
         return new Vector2(LOWERBOUND, UPPERBOUND);
     }
+
+    public static Intervall fromFloatArray(float[] res)
+    {
+        return new Intervall(Mathf.Max(res), Mathf.Min(res));
+    }
+
+    public static Intervall operator -(Intervall a, Intervall b)
+    {
+        return new Intervall(a.LOWERBOUND - b.UPPERBOUND, a.UPPERBOUND - b.LOWERBOUND);
+    }
 }

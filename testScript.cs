@@ -50,8 +50,8 @@ public class testScript : MonoBehaviour
     {
         //StartDebug();
         //StartCamera();
-        StartComputing();
-        //testGetAlphaFromDistanceB();
+        //StartComputing();
+        testGetAlphaFromDistanceB();
         //testIntervalFromOnscreenPos();
         //testIntervalFromB();
         priorAlpha = alpha;
@@ -151,17 +151,16 @@ public class testScript : MonoBehaviour
     private void testGetAlphaFromDistanceB()
     {
         ToricComputing tc = new ToricComputing(target1, target2);
-        float[] alphaTestMin = tc.GetAlphaFromDistanceToB(distanceToB[0], theta);
-        float[] alphaTestMax = tc.GetAlphaFromDistanceToB(distanceToB[1], theta);
+        Intervall alphaTestMin = tc.GetAlphaFromDistanceToB(distanceToB[0], theta);
+        Intervall alphaTestMax = tc.GetAlphaFromDistanceToB(distanceToB[1], theta);
 
-        float minAlpha = Mathf.Min(Mathf.Min(alphaTestMin), Mathf.Min(alphaTestMax));
-        float maxAlpha = Mathf.Max(Mathf.Max(alphaTestMin), Mathf.Max(alphaTestMax));
-        Intervall alphaInterval = new Intervall(minAlpha, maxAlpha);
+
+        Intervall alphaInterval =  alphaTestMin - alphaTestMax ;
         alpha = alphaInterval.getRandom();
 
         //DEBUG
-        Debug.Log(minAlpha);
-        Debug.Log(maxAlpha);
+        Debug.Log(alphaInterval);
+
 
         StartDebug();
     }

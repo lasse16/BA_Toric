@@ -96,14 +96,13 @@ public class ToricComputing
 
         foreach (float t in possibleThetaValues.getEveryValue())
         {
-            float[] AlphaMinB = GetAlphaFromDistanceToB(minDistanceToB, t);
-            float[] AlphaMaxB = GetAlphaFromDistanceToB(maxDistanceToB, t);
-            float minAlpha = Mathf.Min(Mathf.Min(AlphaMinB), Mathf.Min(AlphaMaxB));
-            float maxAlpha = Mathf.Max(Mathf.Max(AlphaMinB), Mathf.Max(AlphaMaxB));
+            
+            Intervall alphaTestMin = GetAlphaFromDistanceToB(minDistanceToB, t);
+            Intervall alphaTestMax = GetAlphaFromDistanceToB(maxDistanceToB, t);
 
 
-           
-            Intervall alphaInterval = new Intervall(minAlpha, maxAlpha);
+            Intervall alphaInterval = alphaTestMin - alphaTestMax;
+
             IaB.Add(t, alphaInterval);
         }
 
@@ -143,20 +142,25 @@ public class ToricComputing
  *    //TODO find error in formula     
  *    
  */
-    public float[] GetAlphaFromDistanceToB(float distance, float theta)
+    public Intervall GetAlphaFromDistanceToB(float distance, float theta)
     {
         float[] res = new float[2];
         
+        
         if (distance <= AB.magnitude)
         {
-            Mathf.Clamp(theta, 1, 2 * Mathf.Sin(AB.magnitude / distance));
-            float acosTest = Mathf.Clamp(AB.magnitude / distance * Mathf.Sin(theta * Mathf.Deg2Rad / 2), -1, 1);
-            float acos = 0;
-            if (acosTest != 0) acos = Mathf.Acos(acosTest);
-            float alphaMINUS = Mathf.PI / 2 - acos;
-            res[0] = alphaMINUS * Mathf.Rad2Deg;
-            float alphaPLUS = Mathf.PI / 2 + acos;
-            res[1] = alphaPLUS * Mathf.Rad2Deg;
+            theta = Mathf.Clamp(theta, 1, 2 * Mathf.Asin(distance /AB.magnitude )* Mathf.Rad2Deg);
+            double acosTest = Mathf.Clamp(AB.magnitude / distance * Mathf.Sin(theta * Mathf.Deg2Rad / 2), -1, 1);
+            double acos = 0;
+            if (acosTest != 0.0)
+            {
+                acos = Math.Acos(acosTest);
+            }
+
+            double alphaMINUS = Mathf.PI / 2 - acos;
+            res[0] = (float)(alphaMINUS * Mathf.Rad2Deg);
+            double alphaPLUS = Mathf.PI / 2 + acos;
+            res[1] = (float)(alphaPLUS * Mathf.Rad2Deg);
         }
         else
         {
@@ -165,10 +169,10 @@ public class ToricComputing
             if (acosTest != 0) acos = Mathf.Acos(acosTest);
             float alpha = Mathf.PI / 2 - acos;
             res[0] = alpha * Mathf.Rad2Deg;
-            res[1] = float.NaN;
+            res[1] = (Mathf.PI-(theta * Mathf.Deg2Rad / 2)) * Mathf.Rad2Deg;
         }
       
-        return res;
+        return Intervall.fromFloatArray(res);
     }
 
     /**
