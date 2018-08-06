@@ -34,6 +34,15 @@ internal class Ellipse : conicSection
         throw new ArgumentException(); 
     }
 
+    public Ellipse(float distanceMajor, float distanceMinor, Vector2 midpoint)
+    {
+        _majorAxis = 2 *  distanceMajor * Vector2.up;
+        _minorAxis = 2 * distanceMinor * Vector2.right;
+        _middlePointEllipse = new Vector3(midpoint.x, midpoint.y, 0);
+
+        FindFoci();
+    }
+
     private void calculateVertices()
     {
         Vector2[] res = new Vector2[4];
@@ -77,26 +86,6 @@ internal class Ellipse : conicSection
 
 
     }
-
-    /**Returns the intersection points of a ellipse at 0,0 and a circle in the same plane
-     * 
-     * 
-     */
-    public List<Vector2> getCircleIntersections(Vector3 midPointCircle, float radius)
-    {
-        Vector3 normedCircleMid = midPointCircle - _middlePointEllipse;
-        float angle = Vector3.Angle(normedCircleMid, _orientation);
-        Quaternion rotation = Quaternion.AngleAxis(angle, Vector3.Cross(_majorAxis, _minorAxis));
-
-
-        throw new NotImplementedException();
-
-
-
-
-
-    }
-        
 
     private Vector2 calculateDistanceToFoci(Vector3 pointToTest)
     {
