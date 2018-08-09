@@ -71,7 +71,7 @@ public class Intervall
      */
     public Boolean IsInside(float value)
     {
-        return LOWERBOUND <= value ^ value < UPPERBOUND;
+        return LOWERBOUND <= value && value <= UPPERBOUND;
     }
 
     /**
@@ -168,5 +168,15 @@ public class Intervall
     public static Intervall operator -(Intervall a, Intervall b)
     {
         return new Intervall(a.LOWERBOUND - b.UPPERBOUND, a.UPPERBOUND - b.LOWERBOUND);
+    }
+
+    public boolean setSamplingRate(float newSamples)
+    {
+        if (newSamples < Length())
+        {
+            _samplingRate = newSamples;
+            return true;
+        }
+        else return false;
     }
 }

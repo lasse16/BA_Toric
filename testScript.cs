@@ -42,6 +42,9 @@ public class testScript : MonoBehaviour
     public Vector2 sizeToReachA;
     public Vector2 sizeToReachB;
 
+    public Vector3 vantageDirection;
+    public float deviationAngle;
+
     /**
      * Creates either a cube or a camera at the calculated position with the given location
      * 
@@ -51,9 +54,10 @@ public class testScript : MonoBehaviour
         //StartDebug();
         //StartCamera();
         //StartComputing();
-        testGetAlphaFromDistanceB();
+        // testGetAlphaFromDistanceB(); //TODO
         //testIntervalFromOnscreenPos();
         //testIntervalFromB();
+        testVantageAngleConstraintA();
         priorAlpha = alpha;
         priorTheta = theta;
         priorPhi = phi;
@@ -64,6 +68,29 @@ public class testScript : MonoBehaviour
 
 
 
+    }
+
+    private void testVantageAngleConstraintA()
+    {
+        ToricComputing tc = new ToricComputing(target1, target2);
+        Dictionary<float, Intervall> phisA = tc.getPositionFromVantage(1, vantageDirection, deviationAngle);
+        foreach (KeyValuePair<float, Intervall> a in phisA)
+        {
+            Debug.Log(a.ToString());
+        }
+        //DEBUG
+        float[] keys = new float[phisA.Keys.Count];
+        phisA.Keys.CopyTo(keys, 0);
+        phi = keys[UnityEngine.Random.Range(0, phisA.Keys.Count - 2)];
+        Intervall thetaRange;
+        phisA.TryGetValue(theta, out thetaRange);
+        theta = thetaRange.getRandom();
+        Debug.Log(theta);
+        Debug.Log(thetaRange);
+        Debug.Log(phi);
+
+
+        StartDebug();
     }
 
     private void StartComputing()
