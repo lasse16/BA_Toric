@@ -170,7 +170,7 @@ public class Intervall
         return new Intervall(a.LOWERBOUND - b.UPPERBOUND, a.UPPERBOUND - b.LOWERBOUND);
     }
 
-    public boolean setSamplingRate(float newSamples)
+    public bool setSamplingRate(float newSamples)
     {
         if (newSamples < Length())
         {

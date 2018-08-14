@@ -270,25 +270,44 @@ public class ToricComputing
     public Dictionary<float, Intervall> getPositionFromVantageBothTargets(Vector3 vantageA, float deviationA, Vector3 vantageB, float deviationB)
     {
         Dictionary<float, Intervall> res = new Dictionary<float, Intervall>();
-        Dictionary<float, Intervall> phiA = getPositionFromVantageOneTarget(1, vantageA, deviationA);
-        Dictionary<float, Intervall> phiB = getPositionFromVantageOneTarget(2, vantageB, deviationB);
+        Dictionary<float, Intervall> phiBetaA = getPositionFromVantageOneTarget(1, vantageA, deviationA);
+        Dictionary<float, Intervall> phiBetaB = getPositionFromVantageOneTarget(2, vantageB, deviationB);
 
-        float[] phiAKeys = phiA.Keys.ToArray();
-        float[] phiBKeys = phiB.Keys.ToArray();
+        float[] phiAKeys = phiBetaA.Keys.ToArray();
+        float[] phiBKeys = phiBetaB.Keys.ToArray();
 
 
         
        float[] possiblePhiIntersect = phiAKeys.Intersect(phiBKeys).ToArray();
-        foreach (float phi in possiblePhiIntersect)
-        {
-            Intervall phiIntervallA, phiIntervallB; 
-            phiA.TryGetValue(phi,out phiIntervallA);
-            phiB.TryGetValue(phi, out phiIntervallB);
+        // foreach (float phi in possiblePhiIntersect)
+        // {
+        Intervall phiIntervallA, phiIntervallB, thetaIntervallA, intersectionIntervall;
+        phiBetaA.TryGetValue(phi, out phiIntervallA);
+        thetaIntervallA = new Intervall(2 * phiIntervallA.getLowerBound(), phiIntervallA.getUpperBound() * 2);
 
-            Intervall Intersection = phiIntervallA.Intersect(phiIntervallB);
-            res.Add(phi, Intersection);
-        }
+
+        phiBetaB.TryGetValue(phi, out phiIntervallB);
+
+
+        float betaMin = phiIntervallB.getLowerBound();
+        float betaMax = phiIntervallB.getUpperBound();
+
+        
+        float theta = CastBetaPrimeToTheta( betaMin,  alpha);
+
+        //DEBUG
+        //Should always be true
+        Debug.Log(thetaIntervallA.IsInside(theta));
+
+        //     Intervall Intersection = phiIntervallA.Intersect(phiIntervallB);
+        //     res.Add(phi, Intersection);
+        // }
         return res;
+    }
+
+    private float CastBetaPrimeToTheta(float beta, float alpha)
+    {
+        return 2*(Mathf.PI - alpha - beta);
     }
 
 
@@ -484,7 +503,7 @@ public class ToricComputing
                 break;
 
             case 1: //conic section = line
-                res.Add(0, new Intervall(Mathf.PI, Mathf.PI));
+                res.Add(0, new Intervall(Mathf.PI/2, Mathf.PI/2));
                 break;
             
             case 2: //conic section = two lines
@@ -518,12 +537,12 @@ public class ToricComputing
     private Intervall appropiateBetaIntervalBounds(Vector2 x)
     {
         
-
+        //TODO proper B* cast
         //RES 2 Paper
         float beta = Mathf.Atan(Mathf.Sqrt(Mathf.Pow(x.x, 2) + Mathf.Pow(x.y, 2)));
         float betaMinus = -beta;
-
-        return new Intervall(2 * Mathf.Min(beta, betaMinus),2 *  Mathf.Max(beta, betaMinus));
+        Vector2 betaSort = sortVector2(new Vector2(beta, betaMinus));
+        return new Intervall( betaSort[0],betaSort[1]);
     }
 
 
