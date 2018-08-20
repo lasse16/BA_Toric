@@ -73,8 +73,8 @@ public class testScript : MonoBehaviour
     private void testVantageAngleConstraintA()
     {
         ToricComputing tc = new ToricComputing(target1, target2);
-        Dictionary<float, Intervall> phisA = tc.getPositionFromVantage(1, vantageDirection, deviationAngle);
-        foreach (KeyValuePair<float, Intervall> a in phisA)
+        Dictionary<float, Interval> phisA = tc.getPositionFromVantageOneTarget(1, vantageDirection, deviationAngle);
+        foreach (KeyValuePair<float, Interval> a in phisA)
         {
             Debug.Log(a.ToString());
         }
@@ -82,7 +82,7 @@ public class testScript : MonoBehaviour
         float[] keys = new float[phisA.Keys.Count];
         phisA.Keys.CopyTo(keys, 0);
         phi = keys[UnityEngine.Random.Range(0, phisA.Keys.Count - 2)];
-        Intervall thetaRange;
+        Interval thetaRange;
         phisA.TryGetValue(theta, out thetaRange);
         theta = thetaRange.getRandom();
         Debug.Log(theta);
@@ -102,9 +102,9 @@ public class testScript : MonoBehaviour
         Vector2 projectedSizeB = tc.DistanceFromProjectedSize(sizeToReachB, 0.5f, target1).toVector();
         //DEBUG
         Debug.Log(projectedSizeA + ";" + projectedSizeB);
-        Dictionary<float, Intervall> alphas = tc.getIntervalOfAcceptedAlpha(projectedSizeA, projectedSizeB);
+        Dictionary<float, Interval> alphas = tc.getIntervalOfAcceptedAlpha(projectedSizeA, projectedSizeB);
 
-        foreach (KeyValuePair<float, Intervall> a in alphas)
+        foreach (KeyValuePair<float, Interval> a in alphas)
         {
             Debug.Log(a.ToString());
         }
@@ -113,7 +113,7 @@ public class testScript : MonoBehaviour
         float[] keys = new float[alphas.Keys.Count];
         alphas.Keys.CopyTo(keys, 0);
         theta = keys[UnityEngine.Random.Range(0, alphas.Keys.Count - 2)];
-        Intervall alphaRange;
+        Interval alphaRange;
         alphas.TryGetValue(theta, out alphaRange);
         alpha = alphaRange.getRandom();
         Debug.Log(theta);
@@ -178,11 +178,11 @@ public class testScript : MonoBehaviour
     private void testGetAlphaFromDistanceB()
     {
         ToricComputing tc = new ToricComputing(target1, target2);
-        Intervall alphaTestMin = tc.GetAlphaFromDistanceToB(distanceToB[0], theta);
-        Intervall alphaTestMax = tc.GetAlphaFromDistanceToB(distanceToB[1], theta);
+        Interval alphaTestMin = tc.GetAlphaFromDistanceToB(distanceToB[0], theta);
+        Interval alphaTestMax = tc.GetAlphaFromDistanceToB(distanceToB[1], theta);
 
 
-        Intervall alphaInterval =  alphaTestMin - alphaTestMax ;
+        Interval alphaInterval =  alphaTestMin - alphaTestMax ;
         alpha = alphaInterval.getRandom();
 
         //DEBUG
@@ -195,7 +195,7 @@ public class testScript : MonoBehaviour
     private void testIntervalFromOnscreenPos()
     {
         ToricComputing tc = new ToricComputing(target1, target2);
-        Intervall alphaTest = tc.getAlphaIntervalFromOnscreenPositions(screenPos1, screenPos2);
+        Interval alphaTest = tc.getAlphaIntervalFromOnscreenPositions(screenPos1, screenPos2);
 
         
 
@@ -208,13 +208,13 @@ public class testScript : MonoBehaviour
     private void testIntervalFromB()
     {
         ToricComputing tc = new ToricComputing(target1, target2);
-        Dictionary <float,Intervall> alphas = tc.getIntervalFromB(screenPos2.x,screenPos2.y);
+        Dictionary <float,Interval> alphas = tc.getIntervalFromB(screenPos2.x,screenPos2.y);
 
        
         float[] keys = new float[alphas.Keys.Count];
         alphas.Keys.CopyTo(keys, 0);
         theta = keys[UnityEngine.Random.Range(0, alphas.Keys.Count - 2)];
-        Intervall alphaRange;
+        Interval alphaRange;
         alphas.TryGetValue(theta, out alphaRange);
         alpha = alphaRange.getRandom();
 

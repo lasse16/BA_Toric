@@ -10,17 +10,17 @@ using UnityEngine;
  * @author Lasse Haffke 
  * @version 29.06.18
  */
-public class Intervall
+public class Interval
 {
     private readonly float LOWERBOUND;
     private readonly float UPPERBOUND;
     private float _samplingRate;
 
     //static interval for the degrees in a circle
-    public static Intervall DegreeInterval = new Intervall(0, 360, 1);
+    public static Interval DegreeInterval = new Interval(0, 360, 1);
 
     //TODO better NaN handling
-    public Intervall(float lBound, float uBound, float samplingRate = 0.05f)
+    public Interval(float lBound, float uBound, float samplingRate = 0.05f)
     {
         //ensure lower bound is smaller then the upper bound
         if (lBound > uBound)
@@ -97,7 +97,7 @@ public class Intervall
      * @param cut the first interval
      * @return the resulting interval 
      */
-    public Intervall Intersect(Intervall cut)
+    public Interval Intersect(Interval cut)
     {
         if (DoNotIntersect(cut))
         {
@@ -105,7 +105,7 @@ public class Intervall
             {
                 if (cut.getUpperBound() <= UPPERBOUND)
                 {
-                    return new Intervall(LOWERBOUND, cut.getUpperBound());
+                    return new Interval(LOWERBOUND, cut.getUpperBound());
                 }
                 return this;
             }
@@ -115,7 +115,7 @@ public class Intervall
                 {
                     return cut;
                 }
-                return new Intervall(cut.getLowerBound(), UPPERBOUND);
+                return new Interval(cut.getLowerBound(), UPPERBOUND);
             }
         }
         return null;
@@ -125,7 +125,7 @@ public class Intervall
      * returns true if the intervals have no intersection
      * 
      */
-    private bool DoNotIntersect(Intervall cut)
+    private bool DoNotIntersect(Interval cut)
     {
         return cut == null || cut.getLowerBound() > UPPERBOUND || cut.getUpperBound() < LOWERBOUND;
     }
@@ -160,14 +160,14 @@ public class Intervall
         return new Vector2(LOWERBOUND, UPPERBOUND);
     }
 
-    public static Intervall fromFloatArray(float[] res)
+    public static Interval fromFloatArray(float[] res)
     {
-        return new Intervall(Mathf.Max(res), Mathf.Min(res));
+        return new Interval(Mathf.Max(res), Mathf.Min(res));
     }
 
-    public static Intervall operator -(Intervall a, Intervall b)
+    public static Interval operator -(Interval a, Interval b)
     {
-        return new Intervall(a.LOWERBOUND - b.UPPERBOUND, a.UPPERBOUND - b.LOWERBOUND);
+        return new Interval(a.LOWERBOUND - b.UPPERBOUND, a.UPPERBOUND - b.LOWERBOUND);
     }
 
     public bool setSamplingRate(float newSamples)
