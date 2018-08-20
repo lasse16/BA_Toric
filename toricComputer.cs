@@ -852,4 +852,9 @@ public class ToricComputing
         return GetAlphaFromDistanceToA(distance, theta);
 
     }
+
+    public float testVisibility(Toricmanifold tm)
+    {
+        return visibilityCheck(tm);
+    }
 }

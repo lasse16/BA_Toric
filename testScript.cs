@@ -57,7 +57,8 @@ public class testScript : MonoBehaviour
         // testGetAlphaFromDistanceB(); //TODO
         //testIntervalFromOnscreenPos();
         //testIntervalFromB();
-        testVantageAngleConstraintA();
+        //testVantageAngleConstraintA();
+        testVisibility();
         priorAlpha = alpha;
         priorTheta = theta;
         priorPhi = phi;
@@ -222,6 +223,14 @@ public class testScript : MonoBehaviour
         StartCamera();
     }
 
+    private void testVisibility()
+    {
+        ToricComputing tc = new ToricComputing(target1, target2);
+        Toricmanifold tm = new Toricmanifold(alpha, theta, phi, target1, target2);
+        Debug.Log(tc.testVisibility(tm));
+
+        StartCamera();
+    }
 
 
     void Update()
