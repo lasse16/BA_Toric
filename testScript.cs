@@ -42,8 +42,14 @@ public class testScript : MonoBehaviour
     public Vector2 sizeToReachA;
     public Vector2 sizeToReachB;
 
-    public Vector3 vantageDirection;
-    public float deviationAngle;
+    public Vector3 vantageDirectionA;
+    public float deviationAngleA;
+
+    public Vector3 vantageDirectionB;
+    public float deviationAngleB;
+
+    public Vector2 visibilityInterval;
+    public float samplingRate;
 
     /**
      * Creates either a cube or a camera at the calculated position with the given location
@@ -57,8 +63,9 @@ public class testScript : MonoBehaviour
         // testGetAlphaFromDistanceB(); //TODO
         //testIntervalFromOnscreenPos();
         //testIntervalFromB();
-        //testVantageAngleConstraintA();
-        testVisibility();
+        testVantageAngleConstraintA(); //TODO
+        //testVisibility();
+        //testAllConstraints();
         priorAlpha = alpha;
         priorTheta = theta;
         priorPhi = phi;
@@ -71,10 +78,22 @@ public class testScript : MonoBehaviour
 
     }
 
+    private void testAllConstraints()
+    {
+        ToricComputing tc = new ToricComputing(target1, target2);
+        Toricmanifold tm = tc.FinalConstraintCombination( samplingRate, vantageDirectionA,  deviationAngleA,  vantageDirectionB,  deviationAngleB,  distanceToA,  distanceToB,  screenPos1,  screenPos2,  visibilityInterval);
+
+        alpha = tm.getAlpha();
+        theta = tm.getTheta();
+        phi = tm.getPhi();
+
+        StartCamera();
+    }
+
     private void testVantageAngleConstraintA()
     {
         ToricComputing tc = new ToricComputing(target1, target2);
-        Dictionary<float, Interval> phisA = tc.getPositionFromVantageOneTarget(1, vantageDirection, deviationAngle);
+        Dictionary<float, Interval> phisA = tc.getPositionFromVantageOneTarget(1, vantageDirectionA, deviationAngleA);
         foreach (KeyValuePair<float, Interval> a in phisA)
         {
             Debug.Log(a.ToString());

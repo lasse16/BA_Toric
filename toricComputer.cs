@@ -332,15 +332,15 @@ public class ToricComputing
         }
         //TODO check influence of early beta change on later functions || use exclusion /limit deviation angle
 
-        Vector3 targetPosition;
+        Vector3 targetPosition = B;
         if (whichOne == 1) targetPosition = A;
-        else targetPosition = B;
 
+        float betaRad = beta.angle() * Mathf.Deg2Rad;
 
 
 
         Cone vantageCone = new Cone(prefferedVantageAngle, deviationAngle, targetPosition);
-        float r = Mathf.Tan(beta.angle() * Mathf.Deg2Rad);
+        float r = Mathf.Tan(betaRad);
 
 
 
@@ -358,11 +358,11 @@ public class ToricComputing
 
 
 
-                float sinDeviation = Mathf.Sin(deviationAngle * Mathf.Deg2Rad);
-                float cosBeta = Mathf.Cos(beta.angle() * Mathf.Deg2Rad);
-                float majorDistance = (sinDeviation * Mathf.Cos(deviationAngle * Mathf.Deg2Rad)) / (Mathf.Abs(Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2)));
+                float sinDeviation = Mathf.Sin(deviationAngle);
+                float cosBeta = Mathf.Cos(betaRad);
+                float majorDistance = (sinDeviation * Mathf.Cos(deviationAngle)) / (Mathf.Abs(Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2)));
                 float minorDistance = sinDeviation / Mathf.Sqrt((Mathf.Abs(Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2))));
-                float midPointDistance = (Mathf.Sin(beta.angle() * Mathf.Deg2Rad) * cosBeta) / Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2);
+                float midPointDistance = (Mathf.Sin(betaRad) * cosBeta) / Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2);
                 Ellipse intersectionC = new Ellipse(majorDistance, minorDistance, midPointDistance * Vector2.up);
 
 
@@ -414,8 +414,8 @@ public class ToricComputing
             case -1: //conic section = parabola
 
 
-                float cotBeta = 1 / Mathf.Tan(beta.toRad());
-                float h = (Mathf.Tan(beta.toRad()) - cotBeta) / 2;
+                float cotBeta = 1 / Mathf.Tan(betaRad);
+                float h = (Mathf.Tan(betaRad) - cotBeta) / 2;
                 float f = cotBeta / 2;
 
 
@@ -457,11 +457,11 @@ public class ToricComputing
 
             case 0: //conic section = hyperbola
 
-                sinDeviation = Mathf.Sin(deviationAngle * Mathf.Deg2Rad);
-                cosBeta = Mathf.Cos(beta.angle() * Mathf.Deg2Rad);
-                majorDistance = (sinDeviation * Mathf.Cos(deviationAngle * Mathf.Deg2Rad)) / (Mathf.Abs(Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2)));
+                sinDeviation = Mathf.Sin(deviationAngle);
+                cosBeta = Mathf.Cos(betaRad);
+                majorDistance = (sinDeviation * Mathf.Cos(deviationAngle)) / (Mathf.Abs(Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2)));
                 minorDistance = sinDeviation / Mathf.Sqrt((Mathf.Abs(Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2))));
-                midPointDistance = (Mathf.Sin(beta.angle() * Mathf.Deg2Rad) * cosBeta) / Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2);
+                midPointDistance = (Mathf.Sin(betaRad) * cosBeta) / Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2);
 
 
 
@@ -512,7 +512,7 @@ public class ToricComputing
                 phiIntervall = new Interval(-deviationAngle, deviationAngle);
                 foreach (float phi in phiIntervall.getEveryValue())
                 {
-                    res.Add(phi, new Interval(0, 360));
+                    res.Add(phi, new Interval(0, 2 * Mathf.PI));
                 }
                 break;
             default:
@@ -716,7 +716,7 @@ public class ToricComputing
                 alphaVANTThetaPhi =  GetVantageAlphaInterval(theta, betaInvB);
                 Interval alphaFINAL = alphaOSP.Intersect(alphaDISTTheta.Intersect(alphaVANTThetaPhi));
 
-                alphaFINAL.setSamplingRate(samplingRateN);
+                alphaFINAL.setSamplingRate(dALPHA);
 
                 foreach (float alpha in alphaFINAL.getEveryValue())
                 {
@@ -774,6 +774,8 @@ public class ToricComputing
         Vector3 vertice8 = (b.center + new Vector3(-b.size.x, b.size.y, b.size.z) * 0.5f);
 
         Vector3[] verticesTarget = { b.center, vertice1, vertice2, vertice3, vertice4, vertice5, vertice6, vertice7, vertice8 };
+        
+       
 
         foreach (Vector3 vertex in verticesTarget)
         {

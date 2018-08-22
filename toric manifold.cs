@@ -213,8 +213,23 @@ public class Toricmanifold
         return (2 * (Mathf.PI - _alpha.toRad())) * Mathf.Rad2Deg;
     }
 
+    public float getAlpha()
+    {
+        return _alpha.angle();
+    }
 
- 
+    public float getTheta()
+    {
+        return _theta.angle();
+    }
+
+    public float getPhi()
+    {
+        return _phi.angle();
+    }
+
+
+
     //TESTMETHODS
 
 
