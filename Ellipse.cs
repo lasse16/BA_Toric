@@ -96,5 +96,7 @@ internal class Ellipse : conicSection
         return new Vector2(distToFoci1, distToFoci2);
     }
 
+
+    
     
 }

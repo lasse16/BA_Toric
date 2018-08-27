@@ -103,7 +103,7 @@ public class testScript : MonoBehaviour
         phisA.Keys.CopyTo(keys, 0);
         phi = keys[UnityEngine.Random.Range(0, phisA.Keys.Count - 2)];
         Interval thetaRange;
-        phisA.TryGetValue(theta, out thetaRange);
+        phisA.TryGetValue(phi, out thetaRange);
         theta = thetaRange.getRandom();
         Debug.Log(theta);
         Debug.Log(thetaRange);
@@ -172,9 +172,7 @@ public class testScript : MonoBehaviour
         cube.transform.rotation = rotTest;
         cube.name = alpha + " : " + theta + " : " + phi;
 
-        //DEBUG
-        Debug.Log((posTest - target1.transform.position).magnitude);
-        Debug.Log((posTest - target2.transform.position).magnitude);
+        
     }
 
     private void testGetAlphaFromDistanceA()

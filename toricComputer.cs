@@ -321,7 +321,8 @@ public class ToricComputing
      */
     public Dictionary<float, Interval> getPositionFromVantageOneTarget(float whichOne, Vector3 v, float deviationAngle)
     {
-        Vector3 prefferedVantageAngle = v;
+
+        Vector3 prefferedVantageAngle = v.normalized;
         FixAngle beta = new FixAngle(Vector3.Angle(AB, prefferedVantageAngle), 180);
         deviationAngle *= Mathf.Deg2Rad;
 
@@ -334,6 +335,7 @@ public class ToricComputing
 
         Vector3 targetPosition = B;
         if (whichOne == 1) targetPosition = A;
+
 
         float betaRad = beta.angle() * Mathf.Deg2Rad;
 
@@ -370,17 +372,18 @@ public class ToricComputing
                 b = -2 * Mathf.Pow(minorDistance, 2) * midPointDistance;
                 c = Mathf.Pow(minorDistance, 2) * Mathf.Pow(midPointDistance, 2) + Mathf.Pow(majorDistance, 2) * (Mathf.Pow(r, 2) - Mathf.Pow(minorDistance, 2));
 
-
+                //CHECK FOR NUMBER OF INTERSECTIONS
                 x = solveQuadraticEquation(a, b, c);
                 y.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.x, 2)));
-                y.y = -y.x;
+                y.y = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.y, 2))); 
+               
 
                 //DEBUG
                 Debug.Log("Intersection points: " + x + y);
+               
 
 
-
-                phiIntervall = appropiatePhiIntervalBounds(new Vector2(x.x, y.x));
+                phiIntervall = appropiatePhiIntervalBounds(new Vector2(x.y, y.y));
 
                 foreach (float phi in phiIntervall.getEveryValue())
                 {
@@ -420,7 +423,7 @@ public class ToricComputing
 
 
                 x = solveQuadraticEquation(-1, -4 * f, 4 * f * h + Mathf.Pow(r, 2));
-                y.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.x, 2)));
+                y.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.y, 2)));
                 y.y = -y.x;
 
                 phiIntervall = appropiatePhiIntervalBounds(new Vector2(x.x, y.x));
@@ -523,8 +526,13 @@ public class ToricComputing
         return res;
     }
 
+    //TODO adjust phi value
     private Interval appropiatePhiIntervalBounds(Vector2 x)
     {
+        if(x.x == float.NaN || x.y == float.NaN)
+        {
+            throw new Exception("no intersection between the vantage");
+        }
         //TODO chech for positive x and y values | radians or degrees
 
         //RES 1 Thesis
@@ -829,8 +837,17 @@ public class ToricComputing
     private Vector2 sortVector2(Vector2 toSort)
     {
         float temp = toSort[0];
-        toSort[0] = Mathf.Min(temp, toSort[1]);
-        toSort[1] = Mathf.Max(temp, toSort[1]);
+        if (!(float.IsNaN(temp) || float.IsNaN(toSort[1])))
+        {
+            toSort[0] = Mathf.Min(temp, toSort[1]);
+            toSort[1] = Mathf.Max(temp, toSort[1]);
+        }
+        else
+        {
+            toSort[0] = float.NaN;
+            if (!float.IsNaN(temp)) toSort[1] = temp;
+        }   
+        
         return toSort;
     }
 
