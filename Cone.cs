@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 internal class Cone
 {
@@ -6,6 +7,7 @@ internal class Cone
     private Vector3 _prefferedVantageAngle;
     //allowed deviation around the preffered vantage angle (degrees) 
     private float _deviationAngle;
+
 
     public Cone(Vector3 prefferedVantageAngle, float deviationAngle, Vector3 apex)
     {
@@ -32,35 +34,39 @@ internal class Cone
         return Vector3.Angle(testVector, _prefferedVantageAngle) <= _deviationAngle;
     }
 
-    //TODO check if correct ||check if correct rotation 
-    /**
-     *Returns the most upward rotated vector around the x axis, 
-     * e.g. the *directix* vector rotated by the max deviation angle around the horizontal (x) axis
-     * 
-     * 
-     */
-    public Vector3 getBoundaryVectorUp()
-    {
-        Vector3 res = Quaternion.AngleAxis(- _deviationAngle, Vector3.right) * _prefferedVantageAngle;
-        return res;
-    }
 
-    public Vector3 getBoundaryVectorDown()
+    public void draw(float coneHeight)
     {
-        Vector3 res = Quaternion.AngleAxis(_deviationAngle, Vector3.right) * _prefferedVantageAngle;
-        return res;
-    }
+       
+            Vector3[] positions;
+            int resolution = 16;
+            float a = Mathf.Tan(_deviationAngle) * coneHeight;
+           
 
-    public Vector3 getBoundaryVectorLeft()
-    {
-        Vector3 res = Quaternion.AngleAxis(-_deviationAngle, Vector3.up) * _prefferedVantageAngle;
-        return res;
-    }
 
-    public Vector3 getBoundaryVectorRight()
-    {
-        Vector3 res = Quaternion.AngleAxis(_deviationAngle, Vector3.up) * _prefferedVantageAngle;
-        return res;
+
+            positions = new Vector3[resolution + 1];
+            float b = Vector3.Angle(Vector3.up, _prefferedVantageAngle)- 90;
+            Quaternion q = Quaternion.LookRotation( _prefferedVantageAngle);
+            Vector3 center = _apex + _prefferedVantageAngle * coneHeight;
+
+            for (int i = 0; i <= resolution; i++)
+            {
+                float angle = (float)i / (float)resolution * 2.0f * Mathf.PI;
+                positions[i] = new Vector3(a * Mathf.Cos(angle), a * Mathf.Sin(angle), 0.0f);
+                positions[i] = q * positions[i] + center;
+            }
+
+            Vector3 priorPoint = center;
+            foreach (Vector3 point in positions)
+            {
+                Debug.DrawLine(priorPoint, point, Color.green, Mathf.Infinity, false);
+                Debug.DrawLine(_apex, point, Color.green, Mathf.Infinity, false);
+            priorPoint = point;
+            }
+
+        
+
     }
 
 

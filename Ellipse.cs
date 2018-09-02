@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 /**
@@ -23,7 +22,7 @@ internal class Ellipse : conicSection
     {
         if (Vector3.Dot(majorAxis, minorAxis) == 0)
         {
-            _orientation = majorAxis;
+            _orientation =  Vector3.Cross(majorAxis,minorAxis);
             _majorAxis = majorAxis.magnitude * Vector2.up;
             _minorAxis = minorAxis.magnitude * Vector2.right;
             _middlePointEllipse = middlePointEllipse;
@@ -34,11 +33,12 @@ internal class Ellipse : conicSection
         throw new ArgumentException(); 
     }
 
-    public Ellipse(float distanceMajor, float distanceMinor, Vector2 midpoint)
+    public Ellipse(float distanceMajor, float distanceMinor, Vector3 midpoint, Vector3 orientation)
     {
         _majorAxis = 2 *  distanceMajor * Vector2.up;
         _minorAxis = 2 * distanceMinor * Vector2.right;
-        _middlePointEllipse = new Vector3(midpoint.x, midpoint.y, 0);
+        _middlePointEllipse = midpoint;
+        _orientation = orientation;
 
         FindFoci();
     }
@@ -96,7 +96,39 @@ internal class Ellipse : conicSection
         return new Vector2(distToFoci1, distToFoci2);
     }
 
+    public void draw(Color color )
+    {
+        Vector3[] positions;
+        int resolution = 16;
+        float a = _majorAxis.magnitude / 2;
+        float b = _minorAxis.magnitude / 2;
 
+        
+
+            positions = new Vector3[resolution + 1];
+            Quaternion q = Quaternion.LookRotation(_orientation);
+            Vector3 center = _middlePointEllipse;
+
+            for (int i = 0; i <= resolution; i++)
+            {
+                float angle = (float)i / (float)resolution * 2.0f * Mathf.PI;
+                positions[i] = new Vector3(a * Mathf.Cos(angle), b * Mathf.Sin(angle), 0.0f);
+                positions[i] = q * positions[i] + center;
+            }
+
+        Vector3 priorPoint = _middlePointEllipse;
+            foreach (Vector3 point in positions)
+            {
+            Debug.DrawLine(priorPoint, point , color, Mathf.Infinity, false);
+            priorPoint = point;
+        } 
+        
+    }
+
+    public Vector3 getCenter()
+    {
+        return _middlePointEllipse;
+    }
     
     
 }

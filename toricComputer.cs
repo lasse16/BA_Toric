@@ -346,7 +346,14 @@ public class ToricComputing
 
 
 
-
+        //DEBUG
+        float coneHeight = Mathf.Sqrt(1 + r * r);
+        vantageCone.draw(coneHeight);
+        Vector3 intersectionVantagePlane = targetPosition + prefferedVantageAngle * coneHeight;
+        Debug.DrawLine(targetPosition, intersectionVantagePlane, Color.black, Mathf.Infinity);
+        Debug.Log(AB);
+        Vector3 intersectionABPlane = targetPosition + -AB.normalized * checkBetaForPlane(beta.angle());
+        DrawPlane(intersectionABPlane, -AB.normalized);
 
         Vector2 x, y;
         float a, b, c;
@@ -365,25 +372,45 @@ public class ToricComputing
                 float majorDistance = (sinDeviation * Mathf.Cos(deviationAngle)) / (Mathf.Abs(Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2)));
                 float minorDistance = sinDeviation / Mathf.Sqrt((Mathf.Abs(Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2))));
                 float midPointDistance = (Mathf.Sin(betaRad) * cosBeta) / Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2);
-                Ellipse intersectionC = new Ellipse(majorDistance, minorDistance, midPointDistance * Vector2.up);
 
+                //DEBUG
+                Ellipse intersectionC = new Ellipse(majorDistance, minorDistance, intersectionVantagePlane, -AB);
+                Ellipse circlePhi = new Ellipse(r, r, intersectionABPlane, -AB);
+                circlePhi.draw(Color.blue);
+                intersectionC.draw(Color.red);
 
                 a = Mathf.Pow(minorDistance, 2) - Mathf.Pow(majorDistance, 2);
                 b = -2 * Mathf.Pow(minorDistance, 2) * midPointDistance;
                 c = Mathf.Pow(minorDistance, 2) * Mathf.Pow(midPointDistance, 2) + Mathf.Pow(majorDistance, 2) * (Mathf.Pow(r, 2) - Mathf.Pow(minorDistance, 2));
-
-                //CHECK FOR NUMBER OF INTERSECTIONS
+                
+                //TODO CHECK FOR NUMBER OF Y INTERSECTIONS
                 x = solveQuadraticEquation(a, b, c);
                 y.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.x, 2)));
-                y.y = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.y, 2))); 
-               
+                y.y = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.y, 2)));
+                y = sortVector2(y);
+
+                Debug.Log(y);
 
                 //DEBUG
+                Ellipse intersectionPointA = new Ellipse(.5f, .5f, new Vector3( intersectionABPlane.x  ,y.y + intersectionABPlane.y, x.x + intersectionABPlane.z) , -AB);
+                Ellipse intersectionPointB = new Ellipse(.5f, .5f, new Vector3( intersectionABPlane.x, y.y + intersectionABPlane.y, x.y + intersectionABPlane.z), -AB);
+                GameObject cubeA = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                cubeA.transform.position = intersectionPointA.getCenter();
+                cubeA.transform.localScale = new Vector3(0.1f, .1f, .1f);
+                intersectionPointA.draw(Color.magenta);
+
+                GameObject cubeB = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                cubeB.transform.position = intersectionPointB.getCenter();
+                cubeB.transform.localScale = new Vector3(0.1f, .1f, .1f);
+                intersectionPointB.draw(Color.white);
+
                 Debug.Log("Intersection points: " + x + y);
                
 
-
+                //RODO check phi INterval | seems to be Pi/2 - phi
                 phiIntervall = appropiatePhiIntervalBounds(new Vector2(x.y, y.y));
+                Debug.Log("Phi Intervall " + phiIntervall.ToString());
+
 
                 foreach (float phi in phiIntervall.getEveryValue())
                 {
@@ -525,6 +552,32 @@ public class ToricComputing
 
         return res;
     }
+
+    private void DrawPlane(Vector3 position, Vector3 normal)
+    {
+        Vector3 v3 ;
+
+        if (normal.normalized != Vector3.forward)
+            v3 = Vector3.Cross(normal, Vector3.forward).normalized * normal.magnitude;
+        else
+            v3 = Vector3.Cross(normal, Vector3.up).normalized * normal.magnitude; ;
+
+        var corner0 = position + v3;
+        var corner2 = position - v3;
+        var q = Quaternion.AngleAxis(90, normal);
+        v3 = q * v3;
+        var corner1 = position + v3;
+        var corner3 = position - v3;
+
+        Debug.DrawLine(corner0, corner2, Color.green,Mathf.Infinity);
+        Debug.DrawLine(corner1, corner3, Color.green, Mathf.Infinity);
+        Debug.DrawLine(corner0, corner1, Color.green, Mathf.Infinity);
+        Debug.DrawLine(corner1, corner2, Color.green, Mathf.Infinity);
+        Debug.DrawLine(corner2, corner3, Color.green, Mathf.Infinity);
+        Debug.DrawLine(corner3, corner0, Color.green, Mathf.Infinity);
+        Debug.DrawRay(position, normal, Color.red, Mathf.Infinity);
+    }
+
 
     //TODO adjust phi value
     private Interval appropiatePhiIntervalBounds(Vector2 x)
@@ -829,9 +882,20 @@ public class ToricComputing
     private Vector2 solveQuadraticEquation(float A, float B, float C)
     {
         Vector2 res = new Vector2();
-        res[0] = (-B + Mathf.Sqrt(Mathf.Pow(B, 2) - 4 * A * C)) / 2 * A;
-        res[1] = (-B - Mathf.Sqrt(Mathf.Pow(B, 2) - 4 * A * C)) / 2 * A;
+        float discriminant = Mathf.Sqrt((B * B) - 4 * A * C);
+        if(discriminant > 0)
+        {
+            res[0] = (-B + discriminant) / (2 * A);
+            res[1] = (-B - discriminant) / (2 * A);
+        }
+        else
+        {
+            res[0] = float.NaN;
+            res[1] = float.NaN;
+        }
+
         return sortVector2(res);
+       
     }
 
     private Vector2 sortVector2(Vector2 toSort)
