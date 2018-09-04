@@ -94,17 +94,16 @@ public class testScript : MonoBehaviour
     {
         ToricComputing tc = new ToricComputing(target1, target2);
         Dictionary<float, Interval> phisA = tc.getPositionFromVantageOneTarget(1, vantageDirectionA, deviationAngleA);
-        foreach (KeyValuePair<float, Interval> a in phisA)
-        {
-            Debug.Log(a.ToString());
-        }
+        
+
         //DEBUG
         float[] keys = new float[phisA.Keys.Count];
         phisA.Keys.CopyTo(keys, 0);
         phi = keys[UnityEngine.Random.Range(0, phisA.Keys.Count - 2)];
         Interval thetaRange;
         phisA.TryGetValue(phi, out thetaRange);
-        theta = thetaRange.getRandom();
+        phi = phi * Mathf.Rad2Deg;
+        theta = thetaRange.getRandom() * Mathf.Rad2Deg;
         Debug.Log(theta);
         Debug.Log(thetaRange);
         Debug.Log(phi);
