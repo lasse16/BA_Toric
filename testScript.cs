@@ -44,9 +44,11 @@ public class testScript : MonoBehaviour
 
     public Vector3 vantageDirectionA;
     public float deviationAngleA;
+    private Vector3 priorVantageA;
 
     public Vector3 vantageDirectionB;
     public float deviationAngleB;
+    private Vector3 priorVantageB;
 
     public Vector2 visibilityInterval;
     public float samplingRate;
@@ -69,6 +71,9 @@ public class testScript : MonoBehaviour
         priorAlpha = alpha;
         priorTheta = theta;
         priorPhi = phi;
+        priorTilt = tilt;
+        priorVantageA = vantageDirectionA;
+        priorVantageB = vantageDirectionB;
         
 
 
@@ -99,13 +104,15 @@ public class testScript : MonoBehaviour
         //DEBUG
         float[] keys = new float[phisA.Keys.Count];
         phisA.Keys.CopyTo(keys, 0);
-        phi = keys[UnityEngine.Random.Range(0, phisA.Keys.Count - 2)];
+        
+        phi = keys[UnityEngine.Random.Range(0, keys.Length - 2)];
         Interval thetaRange;
         phisA.TryGetValue(phi, out thetaRange);
         phi = phi * Mathf.Rad2Deg;
+        Debug.Log(thetaRange);
         theta = thetaRange.getRandom() * Mathf.Rad2Deg;
         Debug.Log(theta);
-        Debug.Log(thetaRange);
+        
         Debug.Log(phi);
 
 
@@ -251,6 +258,6 @@ public class testScript : MonoBehaviour
 
     void Update()
     {
-        if (priorAlpha != alpha || priorPhi != phi || priorTheta != theta || priorTilt != tilt) Start();
+        if (priorAlpha != alpha || priorPhi != phi || priorTheta != theta || priorTilt != tilt || !priorVantageA.Equals(vantageDirectionA) || !priorVantageB.Equals(vantageDirectionB)) Start();
     }
 }

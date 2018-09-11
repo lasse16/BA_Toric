@@ -84,7 +84,7 @@ public class Interval
     public List<float> getEveryValue()
     {
         List<float> every = new List<float>();
-        for (float i = LOWERBOUND; i < UPPERBOUND;)
+        for (float i = LOWERBOUND; i <= UPPERBOUND;)
         {
             every.Add(i);
             i += _samplingRate;
@@ -133,13 +133,14 @@ public class Interval
     public float getRandom()
     {
         List<float> values = getEveryValue();
-        int key = UnityEngine.Random.Range(0, values.Count);
+        
+        int key = UnityEngine.Random.Range(0, values.Count-1);
 
 
 
         return values[key];
     }
-
+    
     public override string ToString()
     {
         return "[" + LOWERBOUND + ";" + UPPERBOUND + "]";
