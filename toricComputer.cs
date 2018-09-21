@@ -294,7 +294,7 @@ public class ToricComputing
         float alphaMin = Mathf.PI - theta / 2 - beta.getLowerBound();
         float alphaMax = Mathf.PI - theta / 2 - beta.getUpperBound();
 
-        return new Interval(alphaMin, alphaMin);
+        return new Interval(alphaMin, alphaMax);
     }
 
     private float CastBetaPrimeToTheta(float beta, float alpha)
@@ -322,22 +322,29 @@ public class ToricComputing
      */
     public Dictionary<float, Interval> getPositionFromVantageOneTarget(float whichOne, Vector3 v, float deviationAngle)
     {
-        
+        Vector3 targetPosition = B;
+        if (whichOne == 1) targetPosition = A;
+         
         Vector3 prefferedVantageAngle = v.normalized;
-        float beta = Vector3.Angle(-AB, prefferedVantageAngle);
+        float phiZero = 0;
+        float lambda = Vector3.Angle(-AB, prefferedVantageAngle) * Mathf.Deg2Rad;
         deviationAngle *= Mathf.Deg2Rad;
 
+
+        Vector2 x, y, y2;
+        float a, b, c;
+        Interval phiIntervall;
+        Dictionary<float, Interval> res = new Dictionary<float, Interval>();
+        List<Vector2> possibleIntersections = new List<Vector2>();
+
+        //TODO check influence of early lambda change on later functions || use exclusion /limit deviation angle
         if (deviationAngle > Mathf.PI / 2)
         {
             deviationAngle = Mathf.PI - deviationAngle;
-            beta = Mathf.PI - beta;
+            lambda = Mathf.PI - lambda;
         }
-        //TODO check influence of early beta change on later functions || use exclusion /limit deviation angle
-
-        Vector3 targetPosition = B;
-        if (whichOne == 1) targetPosition = A;
-
-        float phiZero;
+        
+        
         if (v.y != 0)
         {
             //TODO finish
@@ -347,33 +354,28 @@ public class ToricComputing
             phiZero = Vector3.Angle(vectorOnPlane, targetPosition + v);
         }
 
-        float betaRad = beta * Mathf.Deg2Rad;
-
-
+       
+        
+        
         Cone vantageCone = new Cone(prefferedVantageAngle, deviationAngle, targetPosition);
-        float r = Mathf.Tan(betaRad);
+        float r = Mathf.Tan(lambda);
 
 
 
         //DEBUG
         float coneHeight = Mathf.Sqrt(1 + r * r);
-        Debug.Log(beta);
+        Debug.Log(lambda);
         vantageCone.draw(coneHeight);
         Vector3 intersectionVantagePlane = targetPosition + prefferedVantageAngle * coneHeight;
         Debug.DrawLine(targetPosition, intersectionVantagePlane, Color.black, Mathf.Infinity);
         Debug.DrawLine(targetPosition, targetPosition + -AB, Color.black, Mathf.Infinity);
 
-        Vector3 intersectionABPlane = targetPosition + AB.normalized * checkBetaForPlane(beta);
+        Vector3 intersectionABPlane = targetPosition + AB.normalized * checkBetaForPlane(lambda);
         DrawPlane(intersectionABPlane, -AB.normalized);
 
-        Vector2 x, y;
-        float a, b, c;
-        Interval phiIntervall;
-        Dictionary<float, Interval> res = new Dictionary<float, Interval>();
-        List<Vector2> possibleIntersections = new List<Vector2>();
-        Vector2 y2;
+        float currentPlane = Mathf.Abs(checkBetaForPlane(lambda) - 1);
 
-        switch (checkConicSection(beta, vantageCone))
+        switch (checkConicSection(lambda, vantageCone))
         {
             
             case -3: //circle
@@ -384,7 +386,7 @@ public class ToricComputing
                 {
                     float x1 = Mathf.Tan(deviationAngle) * Mathf.Cos(phi);
                     float y1 = Mathf.Tan(deviationAngle) * Mathf.Sin(phi);
-                    res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x1, y1), new Vector2(-x1, -y1)));
+                    res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x1, y1), new Vector2(-x1, -y1), currentPlane,v));
                 }
             
                     break;
@@ -394,10 +396,10 @@ public class ToricComputing
                
 
                 float sinDeviation = Mathf.Sin(deviationAngle);
-                float cosBeta = Mathf.Cos(betaRad);
-                float majorDistance = (sinDeviation * Mathf.Cos(deviationAngle)) / (Mathf.Abs(Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2)));
-                float minorDistance = sinDeviation / Mathf.Sqrt((Mathf.Abs(Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2))));
-                float midPointDistance = (Mathf.Sin(betaRad) * cosBeta) / Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2);
+                float coslambda = Mathf.Cos(lambda);
+                float majorDistance = (sinDeviation * Mathf.Cos(deviationAngle)) / (Mathf.Abs(Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2)));
+                float minorDistance = sinDeviation / Mathf.Sqrt((Mathf.Abs(Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2))));
+                float midPointDistance = (Mathf.Sin(lambda) * coslambda) / Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2);
 
                 //DEBUG
                 Ellipse intersectionC = new Ellipse(majorDistance, minorDistance, intersectionVantagePlane, -AB);
@@ -406,7 +408,7 @@ public class ToricComputing
                 intersectionC.draw(Color.red);
 
 
-                if (deviationAngle < beta)
+                if (deviationAngle < lambda)
                 {
 
                 
@@ -443,11 +445,12 @@ public class ToricComputing
 
 
                 //TODO find Solution for 4 intersections
-                phiIntervall = appropiatePhiIntervalBounds(new Vector2(Mathf.Abs(possibleIntersections.First().x), Mathf.Abs(possibleIntersections.First().y)));
+                phiIntervall = appropiatePhiIntervalBounds(new Vector2(Mathf.Abs(possibleIntersections.First().x), Mathf.Abs(possibleIntersections.First().y)), phiZero);
 
                 }
 
                 else phiIntervall = new Interval(-Mathf.PI, Mathf.PI);
+
                 Debug.Log("Phi Intervall " + phiIntervall.ToString());
 
 
@@ -459,7 +462,7 @@ public class ToricComputing
                         y.x = Mathf.Sin(phi) * (minorDistance / majorDistance) * Mathf.Sqrt(Mathf.Pow(majorDistance, 2) - Mathf.Pow(midPointDistance, 2));
                         y.y = Mathf.Sin(phi) * (minorDistance / majorDistance) * -Mathf.Sqrt(Mathf.Pow(majorDistance, 2) - Mathf.Pow(midPointDistance, 2));
                         y = sortVector2(y);
-                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x)));
+                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane,v));
                     }
                     else
                     {
@@ -469,6 +472,8 @@ public class ToricComputing
                         x = solveQuadraticEquation(a, b, c);
 
                         //TODO check for 1 or 2 intersection
+                        if (Mathf.Sign(Mathf.Cos(phi)) != Mathf.Sign(x.x)) x.x *= -1;
+                        if (Mathf.Sign(Mathf.Cos(phi)) != Mathf.Sign(x.y)) x.y *= -1;
                         y.x = Mathf.Tan(phi) * x.x;
                         y.y = Mathf.Tan(phi) * x.y;
 
@@ -478,7 +483,7 @@ public class ToricComputing
                         Debug.DrawLine(intersectionABPlane, new Vector3(intersectionABPlane.x, y.x + intersectionABPlane.y, x.x + intersectionABPlane.z), Color.cyan, Mathf.Infinity);
                         Debug.DrawLine(intersectionABPlane, new Vector3(intersectionABPlane.x, y.y + intersectionABPlane.y, x.y + intersectionABPlane.z), Color.yellow, Mathf.Infinity);
 
-                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x)));
+                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane,v));
                     }
                 }
 
@@ -487,9 +492,9 @@ public class ToricComputing
             case -1: //conic section = parabola
                 Debug.Log("Parabola");
 
-                float cotBeta = 1 / Mathf.Tan(betaRad);
-                float h = (Mathf.Tan(betaRad) - cotBeta) / 2;
-                float f = cotBeta / 2;
+                float cotlambda = 1 / Mathf.Tan(lambda);
+                float h = (Mathf.Tan(lambda) - cotlambda) / 2;
+                float f = cotlambda / 2;
 
 
                 x = solveQuadraticEquation(-1, -4 * f, 4 * f * h + Mathf.Pow(r, 2));
@@ -499,7 +504,7 @@ public class ToricComputing
                 y2.y = -y2.x;
                 possibleIntersections = combineAllXandYValues(x, y, y2,v);
 
-                phiIntervall = appropiatePhiIntervalBounds(new Vector2(Mathf.Abs(possibleIntersections.First().x), Mathf.Abs(possibleIntersections.First().y)));
+                phiIntervall = appropiatePhiIntervalBounds(new Vector2(Mathf.Abs(possibleIntersections.First().x), Mathf.Abs(possibleIntersections.First().y)), phiZero);
 
                 
 
@@ -511,7 +516,7 @@ public class ToricComputing
                         y.x = Mathf.Sin(phi) * 2 * Mathf.Sqrt(-f * h);
                         y.y = -y.x;
                         y = sortVector2(y);
-                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x)));
+                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane,v));
                     }
                     else
                     {
@@ -525,7 +530,7 @@ public class ToricComputing
                         //DEBUG
                         Debug.Log(y);
 
-                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x)));
+                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane,v));
                     }
                 }
 
@@ -534,10 +539,10 @@ public class ToricComputing
             case 0: //conic section = hyperbola
                 Debug.Log("Hyperbola");
                 sinDeviation = Mathf.Sin(deviationAngle);
-                cosBeta = Mathf.Cos(betaRad);
-                majorDistance = (sinDeviation * Mathf.Cos(deviationAngle)) / (Mathf.Abs(Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2)));
-                minorDistance = sinDeviation / Mathf.Sqrt((Mathf.Abs(Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2))));
-                midPointDistance = (Mathf.Sin(betaRad) * cosBeta) / Mathf.Pow(cosBeta, 2) - Mathf.Pow(sinDeviation, 2);
+                coslambda = Mathf.Cos(lambda);
+                majorDistance = (sinDeviation * Mathf.Cos(deviationAngle)) / (Mathf.Abs(Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2)));
+                minorDistance = sinDeviation / Mathf.Sqrt((Mathf.Abs(Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2))));
+                midPointDistance = (Mathf.Sin(lambda) * coslambda) / Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2);
 
 
 
@@ -547,7 +552,7 @@ public class ToricComputing
                 y.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.x, 2)));
                 y.y = -y.x;
 
-                phiIntervall = appropiatePhiIntervalBounds(new Vector2(x.x, y.x));
+                phiIntervall = appropiatePhiIntervalBounds(new Vector2(x.x, y.x), phiZero);
 
                 foreach (float phi in phiIntervall.getEveryValue())
                 {
@@ -557,7 +562,7 @@ public class ToricComputing
                         y.x = Mathf.Sin(phi) * (minorDistance / majorDistance) * Mathf.Sqrt(Mathf.Pow(midPointDistance, 2) - Mathf.Pow(majorDistance, 2)); ;
                         y.y = -y.x;
                         y = sortVector2(y);
-                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x)));
+                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane,v));
                     }
                     else
                     {
@@ -573,7 +578,7 @@ public class ToricComputing
                         //DEBUG
                         Debug.Log(y);
 
-                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x)));
+                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane,v));
                     }
                 }
 
@@ -601,6 +606,15 @@ public class ToricComputing
         return res;
     }
 
+    //TODO
+    private Interval checkBetaRange(float betaRad, float deviationAngle)
+    {
+        float betaInf = Mathf.Max(betaRad-deviationAngle, deviationAngle-betaRad);
+        float betaSup = Mathf.Min(betaRad + deviationAngle,2* Mathf.PI - (deviationAngle + betaRad));
+
+        return new Interval(betaInf, betaSup);
+    }
+
     private List<Vector2> combineAllXandYValues(Vector2 x, Vector2 y, Vector2 y2,Vector3 v)
     {
         //DEbug 
@@ -616,8 +630,8 @@ public class ToricComputing
             if (!float.IsNaN(y.x))
         {
             //TODO adjust to coordinate system
-
-            x.x = x.x * Mathf.Sign(v.z);
+            if (v.z < 0) x.x *= -1;
+            
             Vector2 x1y11 = new Vector2(x.x, y.x);
             Vector2 x1y12 = new Vector2(x.x, y.y);
             res.Add(x1y11); res.Add(x1y12);
@@ -625,9 +639,7 @@ public class ToricComputing
 
         if (!float.IsNaN(y2.x))
         {
-            //TODO adjust to coordinate system
-
-            x.x = x.x * Mathf.Sign(v.z);
+            if (v.z < 0) x.y *= -1;
             Vector2 x2y21 = new Vector2(x.y, y2.x);
             Vector2 x2y22 = new Vector2(x.y, y2.y);
             res.Add(x2y21); res.Add(x2y22);
@@ -664,7 +676,7 @@ public class ToricComputing
 
 
     //TODO adjust phi value
-    private Interval appropiatePhiIntervalBounds(Vector2 x)
+    private Interval appropiatePhiIntervalBounds(Vector2 x, float phiV)
     {
         if (x.x == float.NaN || x.y == float.NaN)
         {
@@ -675,19 +687,42 @@ public class ToricComputing
         //RES 1 Thesis
         float phiBoundsRes1 = Mathf.Atan(x.y / x.x);
 
+        //TODO is this the correct way?
+        phiBoundsRes1 = phiBoundsRes1 - phiV;
+
         return new Interval(phiBoundsRes1, -phiBoundsRes1);
 
 
     }
 
-    private Interval appropiateBetaIntervalBounds(Vector2 beta1, Vector2 beta2)
+    private Interval appropiateBetaIntervalBounds(Vector2 beta1, Vector2 beta2, float plane, Vector3 v)
     {
-
-
+        //for what ever plane
+        float planeAdjust = Mathf.PI / 2 * plane;
+        
         //RES 2 Paper
         float lowerBeta = Mathf.Atan(Mathf.Sqrt(Mathf.Pow(beta1.x, 2) + Mathf.Pow(beta1.y, 2)));
         float upperBeta = Mathf.Atan(Mathf.Sqrt(Mathf.Pow(beta2.x, 2) + Mathf.Pow(beta2.y, 2)));
 
+        Debug.Log("PlaneAdjust: " + planeAdjust);
+        //TODO adjust to coordinate system
+        if (v.z < 0)
+        {
+            Debug.Log("lower adjust");
+            lowerBeta = planeAdjust - lowerBeta;
+        }
+        else lowerBeta = planeAdjust + lowerBeta;
+
+        //TODO adjust to coordinate system
+        if (v.z < 0)
+        {
+            Debug.Log("upper adjust");
+            upperBeta = planeAdjust - upperBeta;
+        }
+        else upperBeta = planeAdjust + upperBeta;
+
+        if(lowerBeta < 0 ) lowerBeta = Mathf.PI * 2 + lowerBeta;
+        if (upperBeta < 0) upperBeta = Mathf.PI * 2 + upperBeta;
 
         return new Interval(lowerBeta, upperBeta);
     }
@@ -703,16 +738,16 @@ public class ToricComputing
         {
             case -1:
                 if (beta == 0) return -3; //circle
-                if (beta + vantageCone.getDiviationAngle() < 90) return -2; //ellipse
-                if (beta + vantageCone.getDiviationAngle() == 90) return -1; // parabola
+                if (beta + vantageCone.getDiviationAngle() < Mathf.PI/2) return -2; //ellipse
+                if (beta + vantageCone.getDiviationAngle() == Mathf.PI/2) return -1; // parabola
                 else return 0; //hyperbola
             case 0:
-                if (beta + vantageCone.getDiviationAngle() == 90) return 1;
+                if (beta + vantageCone.getDiviationAngle() == Mathf.PI/2) return 1;
                 else return 2;
             case 1:
-                if (beta == 180) return -3; //circle
-                if (beta - vantageCone.getDiviationAngle() < 90) return 0; //hyperbola
-                if (beta - vantageCone.getDiviationAngle() == 90) return -1; //parabola
+                if (beta == Mathf.PI) return -3; //circle
+                if (beta - vantageCone.getDiviationAngle() < Mathf.PI/2) return 0; //hyperbola
+                if (beta - vantageCone.getDiviationAngle() == Mathf.PI/2) return -1; //parabola
                 else return -2; // ellipse
             default:
                 return 3;
@@ -723,16 +758,16 @@ public class ToricComputing
 
 
     /**
-     * returns -1,0,1 for beta <90,90,>90
+     * returns -1,0,1 for beta <pi/2,PI/2,>PI/2
      * 
      */
     private int checkBetaForPlane(float beta)
     {
-        if (beta < 90)
+        if (beta < Mathf.PI/2)
         {
             return -1;
         }
-        else if (beta == 90)
+        else if (beta == Mathf.PI/2)
         {
             return 0;
         }
@@ -945,8 +980,8 @@ public class ToricComputing
         int lowerCut = Array.IndexOf(array, cutValues.x);
         int upperCut = Array.IndexOf(array, cutValues.y);
         float[] res = new float[upperCut - lowerCut];
-        int y = 0;
-        for (int i = lowerCut + y; lowerCut + y < upperCut; y++)
+        
+        for (int y = 0; lowerCut + y < upperCut; y++)
         {
             res[y] = array[lowerCut + y];
         }
