@@ -324,9 +324,23 @@ public class ToricComputing
     {
         Vector3 targetPosition = B;
         if (whichOne == 1) targetPosition = A;
-         
-        Vector3 prefferedVantageAngle = v.normalized;
+
         float phiZero = 0;
+        if (v.y != 0)
+        {
+            //TODO finish
+            Plane targetlevel = new Plane(targetPosition, Vector3.up);
+            DrawPlane(targetPosition, Vector3.up);
+            Vector3 vectorOnPlane = new Vector3(v.x, 0, v.z);//targetlevel.ClosestPointOnPlane(targetPosition + v);
+
+            Debug.DrawLine(targetPosition, vectorOnPlane + targetPosition, Color.yellow, Mathf.Infinity);
+            Debug.Log("vector OP : " + vectorOnPlane);
+            phiZero = Vector3.Angle(vectorOnPlane, targetPosition + v) * Mathf.Deg2Rad;
+            v = vectorOnPlane;
+        }
+        Debug.Log("phi vector : " + phiZero * Mathf.Rad2Deg);
+        Vector3 prefferedVantageAngle = v.normalized;
+        
         float lambda = Vector3.Angle(-AB, prefferedVantageAngle) * Mathf.Deg2Rad;
         deviationAngle *= Mathf.Deg2Rad;
 
@@ -345,14 +359,7 @@ public class ToricComputing
         }
         
         
-        if (v.y != 0)
-        {
-            //TODO finish
-            Plane targetlevel = new Plane(targetPosition, Vector3.up);
-            Vector3 vectorOnPlane = targetlevel.ClosestPointOnPlane(targetPosition + v);
-
-            phiZero = Vector3.Angle(vectorOnPlane, targetPosition + v);
-        }
+       
 
        
         
@@ -364,7 +371,7 @@ public class ToricComputing
 
         //DEBUG
         float coneHeight = Mathf.Sqrt(1 + r * r);
-        Debug.Log(lambda);
+        Debug.Log(lambda * Mathf.Rad2Deg);
         vantageCone.draw(coneHeight);
         Vector3 intersectionVantagePlane = targetPosition + prefferedVantageAngle * coneHeight;
         Debug.DrawLine(targetPosition, intersectionVantagePlane, Color.black, Mathf.Infinity);
@@ -393,23 +400,25 @@ public class ToricComputing
             case -2: //ellipse
                 Debug.Log("Ellipse");
 
-               
+                //Ellipses too small, are treated like circles 
+                float lambdaTest = lambda;
+                if (lambda > Mathf.PI / 2) lambdaTest = Mathf.PI - lambda;
+                if (deviationAngle > lambdaTest) goto case -3;
+                
 
-                float sinDeviation = Mathf.Sin(deviationAngle);
+                    float sinDeviation = Mathf.Sin(deviationAngle);
                 float coslambda = Mathf.Cos(lambda);
                 float majorDistance = (sinDeviation * Mathf.Cos(deviationAngle)) / (Mathf.Abs(Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2)));
                 float minorDistance = sinDeviation / Mathf.Sqrt((Mathf.Abs(Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2))));
                 float midPointDistance = (Mathf.Sin(lambda) * coslambda) / Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2);
 
                 //DEBUG
-                Ellipse intersectionC = new Ellipse(majorDistance, minorDistance, intersectionVantagePlane, -AB);
+                Ellipse intersectionC = new Ellipse(majorDistance, minorDistance, intersectionVantagePlane, -AB, Mathf.Sign(Mathf.Cos(phiZero)) * phiZero * Mathf.Rad2Deg);
                 Ellipse circlePhi = new Ellipse(r, r, intersectionABPlane, -AB);
                 circlePhi.draw(Color.blue);
                 intersectionC.draw(Color.red);
 
 
-                if (deviationAngle < lambda)
-                {
 
                 
                 a = Mathf.Pow(minorDistance, 2) - Mathf.Pow(majorDistance, 2);
@@ -446,10 +455,7 @@ public class ToricComputing
 
                 //TODO find Solution for 4 intersections
                 phiIntervall = appropiatePhiIntervalBounds(new Vector2(Mathf.Abs(possibleIntersections.First().x), Mathf.Abs(possibleIntersections.First().y)), phiZero);
-
-                }
-
-                else phiIntervall = new Interval(-Mathf.PI, Mathf.PI);
+                
 
                 Debug.Log("Phi Intervall " + phiIntervall.ToString());
 
@@ -606,22 +612,9 @@ public class ToricComputing
         return res;
     }
 
-    //TODO
-    private Interval checkBetaRange(float betaRad, float deviationAngle)
-    {
-        float betaInf = Mathf.Max(betaRad-deviationAngle, deviationAngle-betaRad);
-        float betaSup = Mathf.Min(betaRad + deviationAngle,2* Mathf.PI - (deviationAngle + betaRad));
-
-        return new Interval(betaInf, betaSup);
-    }
 
     private List<Vector2> combineAllXandYValues(Vector2 x, Vector2 y, Vector2 y2,Vector3 v)
-    {
-        //DEbug 
-        Debug.Log(x);
-        Debug.Log(y);
-        Debug.Log(y2);
-        
+    {      
 
         List<Vector2> res = new List<Vector2>();
 
@@ -629,17 +622,13 @@ public class ToricComputing
        
             if (!float.IsNaN(y.x))
         {
-            //TODO adjust to coordinate system
-            if (v.z < 0) x.x *= -1;
-            
             Vector2 x1y11 = new Vector2(x.x, y.x);
             Vector2 x1y12 = new Vector2(x.x, y.y);
             res.Add(x1y11); res.Add(x1y12);
         }
 
         if (!float.IsNaN(y2.x))
-        {
-            if (v.z < 0) x.y *= -1;
+        {  
             Vector2 x2y21 = new Vector2(x.y, y2.x);
             Vector2 x2y22 = new Vector2(x.y, y2.y);
             res.Add(x2y21); res.Add(x2y22);
@@ -686,11 +675,10 @@ public class ToricComputing
 
         //RES 1 Thesis
         float phiBoundsRes1 = Mathf.Atan(x.y / x.x);
+        Debug.Log(phiBoundsRes1 + " : " + phiV);
+        
 
-        //TODO is this the correct way?
-        phiBoundsRes1 = phiBoundsRes1 - phiV;
-
-        return new Interval(phiBoundsRes1, -phiBoundsRes1);
+        return new Interval(phiV + phiBoundsRes1, phiV - phiBoundsRes1);
 
 
     }
@@ -705,21 +693,20 @@ public class ToricComputing
         float upperBeta = Mathf.Atan(Mathf.Sqrt(Mathf.Pow(beta2.x, 2) + Mathf.Pow(beta2.y, 2)));
 
         Debug.Log("PlaneAdjust: " + planeAdjust);
-        //TODO adjust to coordinate system
-        if (v.z < 0)
-        {
-            Debug.Log("lower adjust");
-            lowerBeta = planeAdjust - lowerBeta;
-        }
-        else lowerBeta = planeAdjust + lowerBeta;
+        
 
-        //TODO adjust to coordinate system
-        if (v.z < 0)
+        
+        //Adjust to coordinater system
+        if(v.z < 0 && plane != 0 || plane == 0 && v.z > 0)
         {
-            Debug.Log("upper adjust");
+            lowerBeta = planeAdjust - lowerBeta;
             upperBeta = planeAdjust - upperBeta;
         }
-        else upperBeta = planeAdjust + upperBeta;
+        else
+        {
+        lowerBeta = planeAdjust + lowerBeta;
+        upperBeta = planeAdjust + upperBeta;
+        }
 
         if(lowerBeta < 0 ) lowerBeta = Mathf.PI * 2 + lowerBeta;
         if (upperBeta < 0) upperBeta = Mathf.PI * 2 + upperBeta;

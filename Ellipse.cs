@@ -9,7 +9,9 @@ using UnityEngine;
 internal class Ellipse : conicSection
 {
     //TODO Check 3D
-    private Vector3 _orientation;
+    private Vector3 _normal;
+    private float _rotation;
+
     private Vector2 _majorAxis;
     private Vector2 _minorAxis;
     private Vector3 _middlePointEllipse;
@@ -18,14 +20,15 @@ internal class Ellipse : conicSection
     private Vector2 _foci2;
     private float e;
 
-    public Ellipse(Vector3 majorAxis, Vector3 minorAxis, Vector3 middlePointEllipse)
+    public Ellipse(Vector3 majorAxis, Vector3 minorAxis, Vector3 middlePointEllipse, float rotation = 0)
     {
         if (Vector3.Dot(majorAxis, minorAxis) == 0)
         {
-            _orientation =  Vector3.Cross(majorAxis,minorAxis);
+            _normal =  Vector3.Cross(majorAxis,minorAxis).normalized;
             _majorAxis = majorAxis.magnitude * Vector2.up;
             _minorAxis = minorAxis.magnitude * Vector2.right;
             _middlePointEllipse = middlePointEllipse;
+            _rotation = rotation;
 
             calculateVertices();
             FindFoci();
@@ -33,12 +36,13 @@ internal class Ellipse : conicSection
         throw new ArgumentException(); 
     }
 
-    public Ellipse(float distanceMajor, float distanceMinor, Vector3 midpoint, Vector3 orientation)
+    public Ellipse(float distanceMajor, float distanceMinor, Vector3 midpoint, Vector3 orientation, float rotation = 0)
     {
         _majorAxis = 2 *  distanceMajor * Vector2.up;
         _minorAxis = 2 * distanceMinor * Vector2.right;
         _middlePointEllipse = midpoint;
-        _orientation = orientation;
+        _normal = orientation.normalized;
+        _rotation = rotation;
 
         FindFoci();
     }
@@ -75,8 +79,8 @@ internal class Ellipse : conicSection
 
     public Boolean IsInside(Vector3 pointToTest)
     {
-        Vector3 normalOfPlaneOfEllipse = Vector3.Cross(_majorAxis, _minorAxis);
-        if (Vector3.Dot(normalOfPlaneOfEllipse, pointToTest) == 0)
+        
+        if (Vector3.Dot(_normal, pointToTest) == 0)
         {
             Vector2 distanceToFoci = calculateDistanceToFoci(pointToTest);
 
@@ -106,8 +110,12 @@ internal class Ellipse : conicSection
         
 
             positions = new Vector3[resolution + 1];
-            Quaternion q = Quaternion.LookRotation(_orientation);
+           
             Vector3 center = _middlePointEllipse;
+        
+            Quaternion q = Quaternion.AngleAxis(_rotation, _normal);
+            q *= Quaternion.LookRotation(_normal);
+            Debug.Log(_normal);
 
             for (int i = 0; i <= resolution; i++)
             {
@@ -121,8 +129,9 @@ internal class Ellipse : conicSection
             {
             Debug.DrawLine(priorPoint, point , color, Mathf.Infinity, false);
             priorPoint = point;
-        } 
-        
+        }
+
+        Debug.DrawLine(center + _normal, center, color, Mathf.Infinity, false);
     }
 
     public Vector3 getCenter()
