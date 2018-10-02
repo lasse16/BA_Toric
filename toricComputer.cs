@@ -20,7 +20,7 @@ public class ToricComputing
     private float Sy;
 
     private float _radius;
-    private float _frameRadius = 0.2f;
+    private float _frameRadius = 0.3f;
     private float[] possiblePhiIntersect;
     private bool vantageSet;
 
@@ -266,8 +266,8 @@ public class ToricComputing
     {
 
         Dictionary<float, Interval> res = new Dictionary<float, Interval>();
-        Dictionary<float, Interval> phiBetaA = getPositionFromVantageOneTarget(1, vantageA, deviationA);
-        Dictionary<float, Interval> phiBetaB = getPositionFromVantageOneTarget(2, vantageB, deviationB);
+        Dictionary<float, Interval> phiBetaA = getPositionFromVantageOneTarget(1, vantageA, deviationA,samplingRate);
+        Dictionary<float, Interval> phiBetaB = getPositionFromVantageOneTarget(2, vantageB, deviationB,samplingRate);
         vantageSet = true;
 
         float[] phiAKeys = phiBetaA.Keys.ToArray();
@@ -285,16 +285,16 @@ public class ToricComputing
         Debug.Log("phi intersect" + phiA.Intersect(phiB));
 
         Interval phiInv = phiA.Intersect(phiB);
-        phiInv.setSamplingRate(samplingRate);
+        
 
-        possiblePhiIntersect = phiInv.toArray();
+        possiblePhiIntersect = phiInv.filterArray(phiAKeys);
 
 
         foreach (float phi in possiblePhiIntersect)
         {
             Interval phiIntervallA, thetaIntervallA;
             phiBetaA.TryGetValue(phi, out phiIntervallA);
-            thetaIntervallA = new Interval(2 * phiIntervallA.getLowerBound(), phiIntervallA.getUpperBound() * 2);
+            thetaIntervallA = new Interval(2 * phiIntervallA.getLowerBound() % (Mathf.PI *2), phiIntervallA.getUpperBound() * 2 % (Mathf.PI * 2));
 
             res.Add(phi, thetaIntervallA);
 
@@ -304,10 +304,11 @@ public class ToricComputing
 
     public Interval GetVantageAlphaInterval(float theta, Interval beta)
     {
-        float alphaMin = Mathf.PI - theta / 2 - beta.getLowerBound();
-        float alphaMax = Mathf.PI - theta / 2 - beta.getUpperBound();
+        //TODO check for correct beta
+        float alphaMin = Mathf.PI - theta / 2 - (beta.getLowerBound() % Mathf.PI);
+        float alphaMax = Mathf.PI - theta / 2 - (beta.getUpperBound() % Mathf.PI);
 
-        return new Interval(alphaMin, alphaMax);
+        return new Interval(alphaMin * -1, alphaMax* -1);
     }
 
     private float CastBetaPrimeToTheta(float beta, float alpha)
@@ -879,7 +880,7 @@ public class ToricComputing
 
             foreach (Vector3 pB in VerticesInCamSpaceB)
             {
-                float alpha = Vector3.Angle(pA, pB);
+                float alpha = Vector3.Angle(pA, pB) * Mathf.Deg2Rad;
                 alphaValues.Add(alpha);
             }
         }
@@ -939,71 +940,91 @@ public class ToricComputing
 
 
         List<Toricmanifold> possiblePositions = new List<Toricmanifold>();
-        Toricmanifold res;
+
         Dictionary<float, Interval> ThetaPhi = getThetaIntervallFromVantageBothTargets(vantageA, deviationA, vantageB, deviationB, dPHI);
         Dictionary<float, Interval> AlphaTheta = getIntervalOfAcceptedAlpha(distanceToA, distanceToB,dTHETA);
         Dictionary<float, Interval> phiBetaB = getPositionFromVantageOneTarget(2, vantageB, deviationB, dPHI);
-        Interval phiInterval = getPhiInterval();
-        phiInterval.setSamplingRate(dPHI);
+        
+        
 
 
 
         
 
-        foreach (float phi in phiInterval.getEveryValue())
+        foreach (float phi in possiblePhiIntersect)
         {
             Interval thetaInvPhi;
             ThetaPhi.TryGetValue(phi, out thetaInvPhi);
 
-            thetaInvPhi.setSamplingRate(dTHETA);
+            float[] possibleThetas = thetaInvPhi.filterArray(AlphaTheta.Keys.ToArray());
+           
 
-            foreach (float theta in thetaInvPhi.getEveryValue())
+            foreach (float theta in possibleThetas)
             {
                 Interval alphaDISTTheta, alphaOSP, alphaVANTThetaPhi;
                 AlphaTheta.TryGetValue(theta, out alphaDISTTheta);
+                
                 alphaOSP = getAlphaIntervalFromOnscreenPositions(desPosA, desPosB);
+
                 Interval betaInvB;
-                phiBetaB.TryGetValue(phi, out betaInvB);
+                phiBetaB.TryGetValue(mergeKey(phi,phiBetaB.Keys.ToArray(),dPHI), out betaInvB);
                 alphaVANTThetaPhi = GetVantageAlphaInterval(theta, betaInvB);
-                Interval alphaFINAL = alphaOSP.Intersect(alphaDISTTheta.Intersect(alphaVANTThetaPhi));
 
+
+
+                Interval alphaFINAL = alphaOSP.Intersect(alphaDISTTheta).Intersect(alphaVANTThetaPhi);
+
+
+                if (alphaFINAL == null)
+                {
+                    Debug.Log("AlphaOnScreenPosition: " + alphaOSP + "Alpha DistanceToTargets: " + alphaDISTTheta + "Alpha Vantage Constraint: " + alphaVANTThetaPhi);
+                    throw new Exception("no possible alpha ");
+                }
                 alphaFINAL.setSamplingRate(dALPHA);
-
                 foreach (float alpha in alphaFINAL.getEveryValue())
                 {
-                    possiblePositions.Add(new Toricmanifold(alpha, theta, phi, _target1, _target2));
+                    possiblePositions.Add(new Toricmanifold(alpha * Mathf.Rad2Deg, theta * Mathf.Rad2Deg, phi * Mathf.Rad2Deg, _target1, _target2));
                 }
+
+                Debug.Log("alphaFinal: " + alphaFINAL);
 
             }
         }
 
         float[] visibilityScores;
-        Dictionary<float, Toricmanifold> tmVis = new Dictionary<float, Toricmanifold>();
+        
+        List<KeyValuePair<float, Toricmanifold>> tmVis = new List<KeyValuePair<float, Toricmanifold>>();
         foreach (Toricmanifold tm in possiblePositions)
         {
             float visibility = visibilityCheck(tm);
-            tmVis.Add(visibility, tm);
+            tmVis.Add(new KeyValuePair<float, Toricmanifold>(visibility,tm));
+
         }
-        visibilityScores = sliceArrayAtValue(tmVis.Keys.ToArray(), visibilityValues);
+
+        Lookup<float, Toricmanifold> TableVisTm = (Lookup<float, Toricmanifold>) tmVis.ToLookup((item) => item.Key, (item) => item.Value);
+
+        visibilityScores = new Interval(visibilityValues.x, visibilityValues.y).filterArray(TableVisTm.Select(g => g.Key).ToArray());
 
         float topVis = Mathf.Max(visibilityScores);
 
-        tmVis.TryGetValue(topVis, out res);
+        List<KeyValuePair<float, Toricmanifold>> bestVisTm = tmVis.Where(g => g.Key == topVis).ToList();
 
-        return res;
+
+
+        return bestVisTm.First().Value;
     }
 
-    private float visibilityCheck(Toricmanifold tm)
+    static public float visibilityCheck(Toricmanifold tm)
     {
         Vector3 origin = tm.ToWorldPosition();
         float visibilityScore = 0;
 
         //TODO check whether collider mesh or renderer bounds
-        Bounds b = _target1.GetComponent<Renderer>().bounds;
+        Bounds b = tm.getTarget1().GetComponent<Renderer>().bounds;
 
         float visScoreTargetA = RaycastIntersetionSingleTarget(b, origin);
 
-        b = _target2.GetComponent<Renderer>().bounds;
+        b = tm.getTarget2().GetComponent<Renderer>().bounds;
 
         float visScoreTargetB = RaycastIntersetionSingleTarget(b, origin);
 
@@ -1012,7 +1033,7 @@ public class ToricComputing
         return visibilityScore;
     }
 
-    private float RaycastIntersetionSingleTarget(Bounds b, Vector3 origin)
+    static private float RaycastIntersetionSingleTarget(Bounds b, Vector3 origin)
     {
         float visibilityScore = 0;
         Vector3 vertice1 = (b.center + new Vector3(-b.size.x, -b.size.y, -b.size.z) * 0.5f);
@@ -1037,25 +1058,6 @@ public class ToricComputing
     }
 
     //Helper methods
-
-    private float[] sliceArrayAtValue(float[] array, Vector2 cutValues)
-    {
-        int priorLength = array.Length;
-        array = new float[priorLength + 2];
-        array[priorLength] = cutValues.x;
-        array[priorLength + 1] = cutValues.y;
-        Array.Sort(array);
-        int lowerCut = Array.IndexOf(array, cutValues.x);
-        int upperCut = Array.IndexOf(array, cutValues.y);
-        float[] res = new float[upperCut - lowerCut];
-        
-        for (int y = 0; lowerCut + y < upperCut; y++)
-        {
-            res[y] = array[lowerCut + y];
-        }
-
-        return res;
-    }
 
 
     private Vector2 rotateVector2(Vector2 v, float angle)
@@ -1121,6 +1123,19 @@ public class ToricComputing
         }
         return ia;
     }
+
+
+    private float mergeKey(float key, float[] keys2, float samplingRate)
+    {
+        Interval possibleMerge = new Interval(key - samplingRate / 2, key + samplingRate / 2);
+        foreach (float key2 in keys2)
+        {
+            if (possibleMerge.IsInside(key2)) return key2;
+             
+        }
+        return -1;
+    }
+
 
     //Test methods
     public float testDistanceFromA(float distance, float theta)

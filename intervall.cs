@@ -186,4 +186,14 @@ public class Interval
         }
         else return false;
     }
+
+    public float[] filterArray(float[] toFilter)
+    {
+        List<float> res = new List<float>();
+        foreach (float filter in toFilter)
+        {
+            if (IsInside(filter)) res.Add(filter);
+        }
+        return res.ToArray();
+    }
 }

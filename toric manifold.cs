@@ -210,7 +210,7 @@ public class Toricmanifold
     //Returns the maximum value of theta for a given alpha
     public float getMaxTheta()
     {
-        return (2 * (Mathf.PI - _alpha.toRad())) * Mathf.Rad2Deg;
+        return 2 * (Mathf.PI - _alpha.toRad()) * Mathf.Rad2Deg;
     }
 
     public float getAlpha()
@@ -226,6 +226,23 @@ public class Toricmanifold
     public float getPhi()
     {
         return _phi.angle();
+    }
+
+    public GameObject getTarget1()
+    {
+        return _target1;
+    }
+
+    public GameObject getTarget2()
+    {
+        return _target2;
+    }
+
+
+    override
+    public String ToString()
+    {
+        return "Alpha: " + _alpha.angle() + "Theta: " + _theta.angle() + "Phi: " + _phi.angle() + "Visibility: " + ToricComputing.visibilityCheck(this);
     }
 
 

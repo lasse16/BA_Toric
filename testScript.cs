@@ -88,6 +88,8 @@ public class testScript : MonoBehaviour
         ToricComputing tc = new ToricComputing(target1, target2);
         Toricmanifold tm = tc.FinalConstraintCombination( samplingRate, vantageDirectionA,  deviationAngleA,  vantageDirectionB,  deviationAngleB,  distanceToA,  distanceToB,  screenPos1,  screenPos2,  visibilityInterval);
 
+        //DEBUG
+        Debug.Log("possiblePosition: " + tm.ToString());
         alpha = tm.getAlpha();
         theta = tm.getTheta();
         phi = tm.getPhi();
