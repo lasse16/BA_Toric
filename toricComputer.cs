@@ -43,23 +43,23 @@ public class ToricComputing
   * @return a Dictionary with an interval of accepted alpha values for each theta key in RADIANS
   */
 
-    public Dictionary<float, Interval> getIntervalOfAcceptedAlpha(Vector2 distanceToA, Vector2 distanceToB)
+    public Dictionary<float, Interval> getIntervalOfAcceptedAlpha(Vector2 distanceToA, Vector2 distanceToB, float samplingRate = 0.05f)
     {
         float minDistanceToA = distanceToA[0];
         float maxDistanceToA = distanceToA[1];
         float minDistanceToB = distanceToB[0];
         float maxDistanceToB = distanceToB[1];
 
-        Dictionary<float, Interval> IaA = getIntervalFromA(minDistanceToA, maxDistanceToA);
+        Dictionary<float, Interval> IaA = getIntervalFromA(minDistanceToA, maxDistanceToA,samplingRate);
 
-        Dictionary<float, Interval> IaB = getIntervalFromB(minDistanceToA, maxDistanceToA);
+        Dictionary<float, Interval> IaB = getIntervalFromB(minDistanceToA, maxDistanceToA,samplingRate);
         Dictionary<float, Interval> Ia = new Dictionary<float, Interval>();
 
 
         foreach (float k in IaA.Keys)
         {
-            Interval alphasForThetaA;
-            Interval alphasForThetaB;
+            Interval alphasForThetaA, alphasForThetaB;
+         
             IaA.TryGetValue(k, out alphasForThetaA);
             IaB.TryGetValue(k, out alphasForThetaB);
 
@@ -80,10 +80,10 @@ public class ToricComputing
      * 
      * later used in getIntervalOfAcceptedAlpha()
      */
-    public Dictionary<float, Interval> getIntervalFromB(float minDistanceToB, float maxDistanceToB)
+    public Dictionary<float, Interval> getIntervalFromB(float minDistanceToB, float maxDistanceToB,float samplingRate = 0.05f)
     {
 
-        Interval possibleThetaValues = new Interval(1, 359, 1);
+        Interval possibleThetaValues = new Interval(0.01f, Mathf.PI *2, samplingRate);
         Dictionary<float, Interval> IaB = new Dictionary<float, Interval>();
 
         foreach (float t in possibleThetaValues.getEveryValue())
@@ -107,17 +107,17 @@ public class ToricComputing
     * later used in main getIntervalOfAcceptedAlpha()
     * 
     */
-    private Dictionary<float, Interval> getIntervalFromA(float minDistanceToA, float maxDistanceToA)
+    private Dictionary<float, Interval> getIntervalFromA(float minDistanceToA, float maxDistanceToA, float samplingRate = 0.05f)
     {
-        Interval possibleThetaValues = new Interval(1, 359, 1);
+        Interval possibleThetaValues = new Interval(0.01f, Mathf.PI * 2,samplingRate);
         Dictionary<float, Interval> IaA = new Dictionary<float, Interval>();
 
         foreach (float t in possibleThetaValues.getEveryValue())
         {
             float AlphaMinA = GetAlphaFromDistanceToA(minDistanceToA, t);
             float AlphaMaxA = GetAlphaFromDistanceToA(maxDistanceToA, t);
-            AlphaMinA = Mathf.Clamp(AlphaMinA, 1, 359);
-            AlphaMaxA = Mathf.Clamp(AlphaMaxA, 1, 359);
+            AlphaMinA = Mathf.Clamp(AlphaMinA, 0.01f, Mathf.PI * 2);
+            AlphaMaxA = Mathf.Clamp(AlphaMaxA, 0.01f, Mathf.PI * 2);
             Interval alphaInterval = new Interval(AlphaMinA, AlphaMaxA);
             IaA.Add(t, alphaInterval);
         }
@@ -262,7 +262,7 @@ public class ToricComputing
      * i.e. a theta interval in which the intersection is
      * 
      */
-    public Dictionary<float, Interval> getThetaIntervallFromVantageBothTargets(Vector3 vantageA, float deviationA, Vector3 vantageB, float deviationB)
+    public Dictionary<float, Interval> getThetaIntervallFromVantageBothTargets(Vector3 vantageA, float deviationA, Vector3 vantageB, float deviationB, float samplingRate)
     {
 
         Dictionary<float, Interval> res = new Dictionary<float, Interval>();
@@ -274,14 +274,27 @@ public class ToricComputing
         float[] phiBKeys = phiBetaB.Keys.ToArray();
 
 
+        
 
-        possiblePhiIntersect = phiAKeys.Intersect(phiBKeys).ToArray();
+        Interval phiA = Interval.fromFloatArray(phiAKeys);
+        Interval phiB =Interval.fromFloatArray(phiBKeys);
+       
+
+        
+       
+        Debug.Log("phi intersect" + phiA.Intersect(phiB));
+
+        Interval phiInv = phiA.Intersect(phiB);
+        phiInv.setSamplingRate(samplingRate);
+
+        possiblePhiIntersect = phiInv.toArray();
+
+
         foreach (float phi in possiblePhiIntersect)
         {
             Interval phiIntervallA, thetaIntervallA;
             phiBetaA.TryGetValue(phi, out phiIntervallA);
             thetaIntervallA = new Interval(2 * phiIntervallA.getLowerBound(), phiIntervallA.getUpperBound() * 2);
-
 
             res.Add(phi, thetaIntervallA);
 
@@ -306,9 +319,9 @@ public class ToricComputing
     {
         if (vantageSet)
         {
-            return new Interval(Mathf.Min(possiblePhiIntersect) * Mathf.Rad2Deg, Mathf.Max(possiblePhiIntersect) * Mathf.Rad2Deg);
+            return Interval.fromFloatArray(possiblePhiIntersect);
         }
-        return new Interval(-180, 180);
+        return new Interval(-Mathf.PI, Mathf.PI);
 
     }
 
@@ -320,30 +333,44 @@ public class ToricComputing
      * 
      * 
      */
-    public Dictionary<float, Interval> getPositionFromVantageOneTarget(float whichOne, Vector3 v, float deviationAngle)
+    public Dictionary<float, Interval> getPositionFromVantageOneTarget(float whichOne, Vector3 v, float deviationAngle, float samplingRate = 0.01f)
     {
         Vector3 targetPosition = B;
         if (whichOne == 1) targetPosition = A;
 
         if (v.Equals(Vector3.zero)) throw new Exception("No Vantage constraint set");
+         
 
-
-        float phiZero = 0;
+        float phiVector = 0;
         if (v.y != 0)
         {
-            //TODO finish
+            Vector3 Vflat, PHIflat;
+            
             Plane targetlevel = new Plane(Vector3.up, targetPosition);
             DrawPlane(targetPosition, Vector3.up);
-            Vector3 vectorOnPlane = targetlevel.ClosestPointOnPlane(targetPosition + v.normalized);
+            Vector3 vectorOnPlane = targetlevel.ClosestPointOnPlane(targetPosition + v);
+            vectorOnPlane = vectorOnPlane - targetPosition;
 
-            Debug.DrawLine(targetPosition + vectorOnPlane, targetPosition, Color.magenta, Mathf.Infinity, false);
+            Vector3 phiZero = Vector3.Cross(Vector3.up,AB) * Mathf.Sign(Mathf.Sin(Vector3.SignedAngle(AB,v,Vector3.up) * Mathf.Deg2Rad));
+            Debug.Log("Angle: " + Mathf.Sin(Vector3.SignedAngle(AB, v, Vector3.up) * Mathf.Deg2Rad));
 
-            Debug.Log("vector OP : " + vectorOnPlane);
-        
-            phiZero = Vector3.Angle(vectorOnPlane, targetPosition + v) * Mathf.Deg2Rad;
+
+            Vflat = Vector3.ProjectOnPlane(v.normalized, AB);
+            PHIflat = Vector3.ProjectOnPlane(phiZero.normalized, AB);
+
+            Debug.DrawLine(targetPosition + PHIflat, targetPosition, Color.magenta, Mathf.Infinity, false);
+            Debug.DrawLine(targetPosition + Vflat, targetPosition, Color.red, Mathf.Infinity, false);
+
+           
+
+
+            phiVector = Vector3.SignedAngle(Vflat, PHIflat, AB) * Mathf.Deg2Rad;
+            if(phiVector > (Mathf.PI / 2))phiVector = Mathf.PI -phiVector;
+            
+            
             v = vectorOnPlane;
         }
-        Debug.Log("phi vector : " + phiZero * Mathf.Rad2Deg);
+
         Vector3 prefferedVantageAngle = v.normalized;
         
         float lambda = Vector3.Angle(-AB, prefferedVantageAngle) * Mathf.Deg2Rad;
@@ -392,7 +419,7 @@ public class ToricComputing
             
             case -3: //circle
                 Debug.Log("Circle");
-                phiIntervall = new Interval(-Mathf.PI, Mathf.PI);
+                phiIntervall = new Interval(-Mathf.PI, Mathf.PI,samplingRate);
 
                 foreach (float phi in phiIntervall.getEveryValue())
                 {
@@ -418,7 +445,7 @@ public class ToricComputing
                 float midPointDistance = (Mathf.Sin(lambda) * coslambda) / Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2);
 
                 //DEBUG
-                Ellipse intersectionC = new Ellipse(majorDistance, minorDistance, intersectionVantagePlane, -AB, Mathf.Sign(Mathf.Cos(phiZero)) * phiZero * Mathf.Rad2Deg);
+                Ellipse intersectionC = new Ellipse(majorDistance, minorDistance, intersectionVantagePlane, -AB, phiVector * Mathf.Rad2Deg);
                 Ellipse circlePhi = new Ellipse(r, r, intersectionABPlane, -AB);
                 circlePhi.draw(Color.blue);
                 intersectionC.draw(Color.red);
@@ -459,7 +486,7 @@ public class ToricComputing
 
 
                 //TODO find Solution for 4 intersections
-                phiIntervall = appropiatePhiIntervalBounds(new Vector2(Mathf.Abs(possibleIntersections.First().x), Mathf.Abs(possibleIntersections.First().y)));
+                phiIntervall = appropiatePhiIntervalBounds(new Vector2(Mathf.Abs(possibleIntersections.First().x), Mathf.Abs(possibleIntersections.First().y)),samplingRate);
                 
 
                 Debug.Log("Phi Intervall " + phiIntervall.ToString());
@@ -536,7 +563,7 @@ public class ToricComputing
 
 
 
-                phiIntervall = appropiatePhiIntervalBounds(new Vector2(Mathf.Abs(possibleIntersections.First().x), Mathf.Abs(possibleIntersections.First().y)));
+                phiIntervall = appropiatePhiIntervalBounds(new Vector2(Mathf.Abs(possibleIntersections.First().x), Mathf.Abs(possibleIntersections.First().y)), samplingRate);
 
                 foreach (float phi in phiIntervall.getEveryValue())
                 {
@@ -594,7 +621,7 @@ public class ToricComputing
                 possibleIntersections = combineAllXandYValues(x, y, y2, v);
 
 
-                phiIntervall = appropiatePhiIntervalBounds(new Vector2(x.x, y.x));
+                phiIntervall = appropiatePhiIntervalBounds(new Vector2(x.x, y.x), samplingRate);
 
                 foreach (float phi in phiIntervall.getEveryValue())
                 {
@@ -652,7 +679,7 @@ public class ToricComputing
             Interval beta;
             res.TryGetValue(key, out beta);
             res.Remove(key);
-            res.Add(key + phiZero, beta);
+            res.Add(key + phiVector, beta);
         }
 
 
@@ -711,8 +738,8 @@ public class ToricComputing
     }
 
 
-    //TODO adjust phi value
-    private Interval appropiatePhiIntervalBounds(Vector2 x)
+    
+    private Interval appropiatePhiIntervalBounds(Vector2 x, float samplingRate)
     {
         if (x.x == float.NaN || x.y == float.NaN)
         {
@@ -725,7 +752,7 @@ public class ToricComputing
         
         
 
-        return new Interval(phiBoundsRes1,-phiBoundsRes1);
+        return new Interval(phiBoundsRes1,-phiBoundsRes1, samplingRate);
 
 
     }
@@ -905,18 +932,23 @@ public class ToricComputing
     /// <returns></returns>
     public Toricmanifold FinalConstraintCombination(float samplingRateN, Vector3 vantageA, float deviationA, Vector3 vantageB, float deviationB, Vector2 distanceToA, Vector2 distanceToB, Vector2 desPosA, Vector2 desPosB, Vector2 visibilityValues)
     {
+        samplingRateN = Mathf.Clamp(samplingRateN, 1, samplingRateN);
+        float dPHI = 1f / (2 * Mathf.Pow(samplingRateN / 2, 1.0f / 3));
+        float dTHETA = 1f / (4 * Mathf.Pow(Mathf.Pow(samplingRateN / 2, 2), 1.0f / 3));
+        float dALPHA = 1f / (samplingRateN);
+
+
         List<Toricmanifold> possiblePositions = new List<Toricmanifold>();
         Toricmanifold res;
-        Dictionary<float, Interval> ThetaPhi = getThetaIntervallFromVantageBothTargets(vantageA, deviationA, vantageB, deviationB);
-        Dictionary<float, Interval> AlphaTheta = getIntervalOfAcceptedAlpha(distanceToA, distanceToB);
-        Dictionary<float, Interval> phiBetaB = getPositionFromVantageOneTarget(2, vantageB, deviationB);
+        Dictionary<float, Interval> ThetaPhi = getThetaIntervallFromVantageBothTargets(vantageA, deviationA, vantageB, deviationB, dPHI);
+        Dictionary<float, Interval> AlphaTheta = getIntervalOfAcceptedAlpha(distanceToA, distanceToB,dTHETA);
+        Dictionary<float, Interval> phiBetaB = getPositionFromVantageOneTarget(2, vantageB, deviationB, dPHI);
         Interval phiInterval = getPhiInterval();
-
-        float dPHI = 2 * Mathf.Pow(samplingRateN / 2, 1.0f / 3);
-        float dTHETA = 4 * Mathf.Pow(Mathf.Pow(samplingRateN / 2, 2), 1.0f / 3);
-        float dALPHA = samplingRateN;
-
         phiInterval.setSamplingRate(dPHI);
+
+
+
+        
 
         foreach (float phi in phiInterval.getEveryValue())
         {

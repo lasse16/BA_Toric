@@ -65,9 +65,9 @@ public class testScript : MonoBehaviour
         // testGetAlphaFromDistanceB(); //TODO
         //testIntervalFromOnscreenPos();
         //testIntervalFromB();
-       testVantageAngleConstraintA(); //TODO
+       //testVantageAngleConstraintA(); //TODO
         //testVisibility();
-        //testAllConstraints(); //TODO
+        testAllConstraints(); //TODO
         priorAlpha = alpha;
         priorTheta = theta;
         priorPhi = phi;

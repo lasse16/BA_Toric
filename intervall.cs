@@ -99,7 +99,7 @@ public class Interval
      */
     public Interval Intersect(Interval cut)
     {
-        if (DoNotIntersect(cut))
+        if (!DoNotIntersect(cut))
         {
             if (cut.getLowerBound() <= LOWERBOUND)
             {
@@ -164,6 +164,12 @@ public class Interval
     public static Interval fromFloatArray(float[] res)
     {
         return new Interval(Mathf.Max(res), Mathf.Min(res));
+    }
+
+    public float[] toArray()
+    {
+        List<float> everyValue = getEveryValue();
+        return everyValue.ToArray();
     }
 
     public static Interval operator -(Interval a, Interval b)
