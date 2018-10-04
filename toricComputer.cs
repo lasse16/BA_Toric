@@ -340,8 +340,9 @@ public class ToricComputing
         if (whichOne == 1) targetPosition = A;
 
         if (v.Equals(Vector3.zero)) throw new Exception("No Vantage constraint set");
-         
 
+        //TODO check if v.y or phi more important
+        Vector3 upOnPlane = Vector3.up;
         float phiVector = 0;
         if (v.y != 0)
         {
@@ -351,8 +352,9 @@ public class ToricComputing
             DrawPlane(targetPosition, Vector3.up);
             Vector3 vectorOnPlane = targetlevel.ClosestPointOnPlane(targetPosition + v);
             vectorOnPlane = vectorOnPlane - targetPosition;
+            upOnPlane = Vector3.ProjectOnPlane(upOnPlane, AB);
 
-            Vector3 phiZero = Vector3.Cross(Vector3.up,AB) * Mathf.Sign(Mathf.Sin(Vector3.SignedAngle(AB,v,Vector3.up) * Mathf.Deg2Rad));
+            Vector3 phiZero = Vector3.Cross(upOnPlane,AB) * Mathf.Sign(Mathf.Sin(Vector3.SignedAngle(AB,v,Vector3.up) * Mathf.Deg2Rad));
             Debug.Log("Angle: " + Mathf.Sin(Vector3.SignedAngle(AB, v, Vector3.up) * Mathf.Deg2Rad));
 
 
@@ -374,7 +376,9 @@ public class ToricComputing
 
         Vector3 prefferedVantageAngle = v.normalized;
         
-        float lambda = Vector3.Angle(-AB, prefferedVantageAngle) * Mathf.Deg2Rad;
+        
+        float signedLambda = Vector3.SignedAngle(-AB, prefferedVantageAngle, upOnPlane) * Mathf.Deg2Rad;
+        float lambda = Mathf.Abs(signedLambda);
         deviationAngle *= Mathf.Deg2Rad;
 
 
@@ -426,7 +430,7 @@ public class ToricComputing
                 {
                     float x1 = Mathf.Tan(deviationAngle) * Mathf.Cos(phi);
                     float y1 = Mathf.Tan(deviationAngle) * Mathf.Sin(phi);
-                    res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x1, y1), new Vector2(-x1, -y1), currentPlane,v));
+                    res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x1, y1), new Vector2(-x1, -y1), currentPlane));
                 }
             
                     break;
@@ -444,24 +448,28 @@ public class ToricComputing
                 float majorDistance = (sinDeviation * Mathf.Cos(deviationAngle)) / (Mathf.Abs(Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2)));
                 float minorDistance = sinDeviation / Mathf.Sqrt((Mathf.Abs(Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2))));
                 float midPointDistance = (Mathf.Sin(lambda) * coslambda) / Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2);
+                midPointDistance *= Mathf.Sign(signedLambda);
 
                 //DEBUG
                 Ellipse intersectionC = new Ellipse(majorDistance, minorDistance, intersectionVantagePlane, -AB, phiVector * Mathf.Rad2Deg);
                 Ellipse circlePhi = new Ellipse(r, r, intersectionABPlane, -AB);
                 circlePhi.draw(Color.blue);
                 intersectionC.draw(Color.red);
+              
 
 
 
                 
                 a = Mathf.Pow(minorDistance, 2) - Mathf.Pow(majorDistance, 2);
-                b = -2 * Mathf.Pow(minorDistance, 2) * midPointDistance;
+                b = -2 * Mathf.Pow(minorDistance, 2) * Mathf.Abs(midPointDistance);
                 c = Mathf.Pow(minorDistance, 2) * Mathf.Pow(midPointDistance, 2) + Mathf.Pow(majorDistance, 2) * (Mathf.Pow(r, 2) - Mathf.Pow(minorDistance, 2));
 
               
 
                     
                 x = solveQuadraticEquation(a, b, c);
+                x.x *= Mathf.Sign(midPointDistance);
+                x.y *= Mathf.Sign(midPointDistance);
                 y.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.x, 2)));
                 y.y = -y.x;
                 y2.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.y, 2)));
@@ -470,7 +478,7 @@ public class ToricComputing
                 y2 = sortVector2(y2);
 
                 
-                possibleIntersections = combineAllXandYValues(x, y, y2, v);
+                possibleIntersections = combineAllXandYValues(x, y, y2);
 
 
 
@@ -501,7 +509,7 @@ public class ToricComputing
                         y.x = Mathf.Sin(phi) * (minorDistance / majorDistance) * Mathf.Sqrt(Mathf.Pow(majorDistance, 2) - Mathf.Pow(midPointDistance, 2));
                         y.y = Mathf.Sin(phi) * (minorDistance / majorDistance) * -Mathf.Sqrt(Mathf.Pow(majorDistance, 2) - Mathf.Pow(midPointDistance, 2));
                         y = sortVector2(y);
-                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane,v));
+                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane));
                     }
                     else
                     {
@@ -511,18 +519,18 @@ public class ToricComputing
                         x = solveQuadraticEquation(a, b, c);
 
                         //TODO check for 1 or 2 intersection
-                        if (Mathf.Sign(Mathf.Cos(phi)) != Mathf.Sign(x.x)) x.x *= -1;
-                        if (Mathf.Sign(Mathf.Cos(phi)) != Mathf.Sign(x.y)) x.y *= -1;
+                        
                         y.x = Mathf.Tan(phi) * x.x;
                         y.y = Mathf.Tan(phi) * x.y;
 
 
 
-
+                        Debug.Log("phi intersection1" + x.x +" : " + y.x);
+                        Debug.Log("phi intersection2" + x.y + " : " + y.y);
                         Debug.DrawLine(intersectionABPlane, new Vector3(intersectionABPlane.x, y.x + intersectionABPlane.y, x.x + intersectionABPlane.z), Color.cyan, Mathf.Infinity);
                         Debug.DrawLine(intersectionABPlane, new Vector3(intersectionABPlane.x, y.y + intersectionABPlane.y, x.y + intersectionABPlane.z), Color.yellow, Mathf.Infinity);
 
-                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane,v));
+                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane));
                     }
                 }
 
@@ -531,15 +539,16 @@ public class ToricComputing
             case -1: //conic section = parabola
                 Debug.Log("Parabola");
 
-
-                //TODO check parabola case +x +z
                 float cotlambda = 1 / Mathf.Tan(lambda);
                 float h = (Mathf.Tan(lambda) - cotlambda) / 2;
                 float f = cotlambda / 2;
+                h *= Mathf.Sign(signedLambda);
 
+                Debug.Log("Height : " + h);
 
-                x = solveQuadraticEquation(-1, -4 * f, 4 * f * h + Mathf.Pow(r, 2));
-
+                x = solveQuadraticEquation(-1, -4 * f, 4 * f * Mathf.Abs(h) + Mathf.Pow(r, 2));
+                x.x *= Mathf.Sign(signedLambda);
+                x.y *= Mathf.Sign(signedLambda);
 
                 y.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.x, 2)));
                 y.y = -y.x;
@@ -547,7 +556,7 @@ public class ToricComputing
                 y2.y = -y2.x;
                 y = sortVector2(y);
                 y2 = sortVector2(y2);
-                possibleIntersections = combineAllXandYValues(x, y, y2,v);
+                possibleIntersections = combineAllXandYValues(x, y, y2);
 
 
                 foreach (Vector2 item in possibleIntersections)
@@ -561,10 +570,11 @@ public class ToricComputing
                 }
 
 
+                float intersectionX = possibleIntersections.First().x;
+                float intersectionY = possibleIntersections.First().y;
 
 
-
-                phiIntervall = appropiatePhiIntervalBounds(new Vector2(Mathf.Abs(possibleIntersections.First().x), Mathf.Abs(possibleIntersections.First().y)), samplingRate);
+                phiIntervall = appropiatePhiIntervalBounds(new Vector2(Mathf.Abs(intersectionX), Mathf.Abs(intersectionY)), samplingRate);
 
                 foreach (float phi in phiIntervall.getEveryValue())
                 {
@@ -574,7 +584,7 @@ public class ToricComputing
                         y.x = Mathf.Sin(phi) * 2 * Mathf.Sqrt(-f * h);
                         y.y = -y.x;
                         y = sortVector2(y);
-                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane,v));
+                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane));
                     }
                     else
                     {
@@ -582,15 +592,15 @@ public class ToricComputing
                         b = -4 * f;
                         c = 4 * f * h;
                         x = solveQuadraticEquation(a, b, c);
+                        x.x *= Mathf.Sign(signedLambda);
+                        x.y *= Mathf.Sign(signedLambda);
 
-                        if (Mathf.Sign(Mathf.Cos(phi)) != Mathf.Sign(x.x)) x.x *= -1;
-                        if (Mathf.Sign(Mathf.Cos(phi)) != Mathf.Sign(x.y)) x.y *= -1;
                         y.x = Mathf.Tan(phi) * x.x;
                         y.y = Mathf.Tan(phi) * x.y;
                         //DEBUG
                         Debug.Log(y);
 
-                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane,v));
+                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane));
                     }
                 }
 
@@ -604,13 +614,19 @@ public class ToricComputing
                 majorDistance = (sinDeviation * Mathf.Cos(deviationAngle)) / (Mathf.Abs(Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2)));
                 minorDistance = sinDeviation / Mathf.Sqrt((Mathf.Abs(Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2))));
                 midPointDistance = (Mathf.Sin(lambda) * coslambda) / Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2);
+                midPointDistance *= Mathf.Sign(signedLambda);
+
+                Debug.Log("midpoint distance: " + midPointDistance);
+
+                a = Mathf.Pow(minorDistance, 2) + Mathf.Pow(majorDistance, 2);
+                b = -2 * Mathf.Pow(minorDistance, 2) * Mathf.Abs( midPointDistance);
+                c = Mathf.Pow(minorDistance, 2) * Mathf.Pow(midPointDistance, 2) - Mathf.Pow(majorDistance, 2) * (Mathf.Pow(r, 2) + Mathf.Pow(minorDistance, 2));
+
+                x = solveQuadraticEquation(a,b,c);
+                x.x *= Mathf.Sign(midPointDistance);
+                x.y *= Mathf.Sign(midPointDistance);
 
 
-
-
-
-                x = solveQuadraticEquation(Mathf.Pow(minorDistance, 2) + Mathf.Pow(majorDistance, 2), -2 * Mathf.Pow(minorDistance, 2) * midPointDistance, Mathf.Pow(minorDistance, 2) * Mathf.Pow(midPointDistance, 2) - Mathf.Pow(majorDistance, 2) * (Mathf.Pow(r, 2) + Mathf.Pow(minorDistance, 2)));
-                
                 y.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.x, 2)));
                 y.y = -y.x;
                 y2.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.y, 2)));
@@ -618,11 +634,22 @@ public class ToricComputing
                 y = sortVector2(y);
                 y2 = sortVector2(y2);
 
-                //TODO sector intersect
-                possibleIntersections = combineAllXandYValues(x, y, y2, v);
+                
+                possibleIntersections = combineAllXandYValues(x, y, y2);
+
+                foreach (Vector2 item in possibleIntersections)
+                {
+                    Debug.Log(item.x + ":" + item.y);
+                    Ellipse intersectionPointA = new Ellipse(.05f, .05f, new Vector3(intersectionABPlane.x, item.y + intersectionABPlane.y, item.x + intersectionABPlane.z), -AB);
+                    GameObject cubeA = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    cubeA.transform.position = intersectionPointA.getCenter();
+                    cubeA.transform.localScale = new Vector3(0.1f, .1f, .1f);
+                    intersectionPointA.draw(Color.magenta);
+                }
 
 
-                phiIntervall = appropiatePhiIntervalBounds(new Vector2(x.x, y.x), samplingRate);
+                phiIntervall = appropiatePhiIntervalBounds(new Vector2(Mathf.Abs(possibleIntersections.First().x), Mathf.Abs(possibleIntersections.First().y)), samplingRate);
+
 
                 foreach (float phi in phiIntervall.getEveryValue())
                 {
@@ -632,7 +659,7 @@ public class ToricComputing
                         y.x = Mathf.Sin(phi) * (minorDistance / majorDistance) * Mathf.Sqrt(Mathf.Pow(midPointDistance, 2) - Mathf.Pow(majorDistance, 2)); ;
                         y.y = -y.x;
                         y = sortVector2(y);
-                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane,v));
+                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane));
                     }
                     else
                     {
@@ -641,15 +668,16 @@ public class ToricComputing
                         c = Mathf.Pow(minorDistance, 2) * (Mathf.Pow(midPointDistance, 2) - Mathf.Pow(majorDistance, 2));
                         x = solveQuadraticEquation(a, b, c);
 
+                        
 
-                        if (Mathf.Sign(Mathf.Cos(phi)) != Mathf.Sign(x.x)) x.x *= -1;
-                        if (Mathf.Sign(Mathf.Cos(phi)) != Mathf.Sign(x.y)) x.y *= -1;
+
+
                         y.x = Mathf.Tan(phi) * x.x;
                         y.y = Mathf.Tan(phi) * x.y;
                         //DEBUG
                         Debug.Log(y);
 
-                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane,v));
+                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), currentPlane));
                     }
                 }
 
@@ -666,8 +694,7 @@ public class ToricComputing
                 foreach (float phi in phiIntervall.getEveryValue())
                 {
                     float plane = Mathf.PI * 1.5f;
-                    //TODO adjust to coordinate system
-                    if (v.z < 0) plane = Mathf.PI / 2;
+                    if (signedLambda < 0) plane = Mathf.PI / 2;
                     res.Add(phi, new Interval(plane - deviationAngle, plane + deviationAngle));
                 }
                 break;
@@ -688,7 +715,7 @@ public class ToricComputing
     }
 
 
-    private List<Vector2> combineAllXandYValues(Vector2 x, Vector2 y, Vector2 y2,Vector3 v)
+    private List<Vector2> combineAllXandYValues(Vector2 x, Vector2 y, Vector2 y2)
     {      
 
         List<Vector2> res = new List<Vector2>();
@@ -758,35 +785,50 @@ public class ToricComputing
 
     }
 
-    private Interval appropiateBetaIntervalBounds(Vector2 beta1, Vector2 beta2, float plane, Vector3 v)
+    private Interval appropiateBetaIntervalBounds(Vector2 beta1, Vector2 beta2, float plane)
     {
         //for what ever plane
         float planeAdjust = Mathf.PI / 2 * plane;
 
-       
-        
+
+
         //RES 2 Paper
-        float lowerBeta = Mathf.Atan(Mathf.Sqrt(Mathf.Pow(beta1.x, 2) + Mathf.Pow(beta1.y, 2)));
-        float upperBeta = Mathf.Atan(Mathf.Sqrt(Mathf.Pow(beta2.x, 2) + Mathf.Pow(beta2.y, 2)));
+        float sqrtBeta1 = Mathf.Sqrt(beta1.x * beta1.x + beta1.y * beta1.y);
+        float sqrtBeta2 = Mathf.Sqrt(beta2.x * beta2.x + beta2.y * beta2.y);
+
+        float lowerBeta = Mathf.Atan(sqrtBeta1);
+        float upperBeta = Mathf.Atan(sqrtBeta2);
 
         Debug.Log("PlaneAdjust: " + planeAdjust);
         
 
-        
-        //Adjust to coordinater system
-        if(v.z < 0 && plane != 0 || plane == 0 && v.z > 0)
+        if(beta1.x < 0)
         {
             lowerBeta = planeAdjust - lowerBeta;
+        }
+        else
+        {
+            lowerBeta = planeAdjust + lowerBeta;
+        }
+        if (beta2.x < 0)
+        {
             upperBeta = planeAdjust - upperBeta;
         }
         else
         {
-        lowerBeta = planeAdjust + lowerBeta;
-        upperBeta = planeAdjust + upperBeta;
+            upperBeta = planeAdjust + upperBeta;
         }
 
-        if(lowerBeta < 0 ) lowerBeta = Mathf.PI * 2 + lowerBeta;
+        //TODO fix interval #workaround
+        if (Mathf.Sign(lowerBeta) > Mathf.Sign(upperBeta) && lowerBeta != 0) return new Interval(0, lowerBeta);
+        if (Mathf.Sign(lowerBeta) < Mathf.Sign(upperBeta) && upperBeta != 0) return new Interval(0, upperBeta);
+
+        if (lowerBeta < 0 ) lowerBeta = Mathf.PI * 2 + lowerBeta;
         if (upperBeta < 0) upperBeta = Mathf.PI * 2 + upperBeta;
+
+        if (lowerBeta == 0 && upperBeta > Mathf.PI) return new Interval(upperBeta, Mathf.PI * 2);
+       
+        
 
         return new Interval(lowerBeta, upperBeta);
     }
@@ -809,9 +851,11 @@ public class ToricComputing
                 if (beta + vantageCone.getDiviationAngle() == Mathf.PI/2) return 1;
                 else return 2;
             case 1:
+                float differentEquals = beta - vantageCone.getDiviationAngle()-(Mathf.PI / 2);
+
                 if (beta == Mathf.PI) return -3; //circle
                 if (beta - vantageCone.getDiviationAngle() > Mathf.PI/2) return -2; // ellipse
-                if ((beta - vantageCone.getDiviationAngle())-(Mathf.PI/2)< Mathf.Pow(10, -5) && (beta - vantageCone.getDiviationAngle() - (Mathf.PI / 2) > 0)) return -1; //parabola
+                if ((differentEquals< 0.00001f) && (Mathf.Abs(differentEquals)<= 0.00001f)) return -1; //parabola
                 else return 0; //hyperbola
             default:
                 return 3;
