@@ -77,7 +77,7 @@ public class Toricmanifold
     {
         Vector3 C;
         float last = (vecAB.magnitude * Mathf.Sin(_alpha.toRad() + _theta.toRad() / 2))/ Mathf.Sin(_alpha.toRad());
-
+        
 
         Vector3 n = -vecAB;
        
@@ -93,10 +93,18 @@ public class Toricmanifold
        
         
         Vector3 t = Vector3.Cross(z, n);
+        
 
-        Quaternion qT = Quaternion.AngleAxis(_theta.angle(), t);
+        
+       
+
+
+        Quaternion qT = Quaternion.AngleAxis(_theta.angle()/2,t.normalized);
+
+        
         Quaternion qP = Quaternion.AngleAxis(_phi.angle(), n);
-        C = A + (qP * qT * vecAB) * last / vecAB.magnitude;
+
+        C =A + (qP * qT * vecAB) * last / vecAB.magnitude;
         return C;
     }
 

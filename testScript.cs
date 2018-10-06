@@ -66,8 +66,11 @@ public class testScript : MonoBehaviour
         //testIntervalFromOnscreenPos();
         //testIntervalFromB();
        testVantageAngleConstraintA(); //TODO
-        //testVisibility();
-       // testAllConstraints(); //TODO
+                                      //testVisibility();
+                                       //testAllConstraints(); //TODO
+                                                             //visualizeTheta();
+                                                             //visualizePhi();
+                                                             // visualizeToricSpace();
         priorAlpha = alpha;
         priorTheta = theta;
         priorPhi = phi;
@@ -108,11 +111,11 @@ public class testScript : MonoBehaviour
         phisA.Keys.CopyTo(keys, 0);
         
         phi = keys[UnityEngine.Random.Range(0, keys.Length - 2)];
-        Interval thetaRange;
-        phisA.TryGetValue(phi, out thetaRange);
+        Interval betaRange;
+        phisA.TryGetValue(phi, out betaRange);
         phi = phi * Mathf.Rad2Deg;
-        Debug.Log(thetaRange);
-        theta = thetaRange.getRandom() * Mathf.Rad2Deg;
+        Debug.Log(betaRange);
+        theta = 2 * betaRange.getRandom() * Mathf.Rad2Deg;
         Debug.Log(theta);
         
         Debug.Log(phi);
@@ -255,6 +258,85 @@ public class testScript : MonoBehaviour
         Debug.Log(tc.testVisibility(tm));
 
         StartCamera();
+    }
+
+    private void visualizeTheta()
+    {
+        Toricmanifold tm = new Toricmanifold(alpha, 1f, phi, target1, target2);
+        new Ellipse(.01f, .01f, tm.ToWorldPosition(),Vector3.up).draw(Color.red);
+
+        float maxTheta =  tm.getMaxTheta();
+
+        List<Vector3> thetaPos = new List<Vector3>();
+       
+        for (int i = 2; i < maxTheta; i++)
+        {
+            Toricmanifold manifold = new Toricmanifold(alpha, i, phi, target1, target2);
+            thetaPos.Add(manifold.ToWorldPosition());
+        }
+
+        Vector3 priorPos = tm.ToWorldPosition();
+        foreach (Vector3 pos in thetaPos)
+        {
+            Debug.DrawLine(priorPos, pos, Color.gray, Mathf.Infinity, false);
+            priorPos = pos;
+        }
+    }
+
+    private void visualizePhi()
+    {
+        Toricmanifold tm = new Toricmanifold(alpha, theta, 1, target1, target2);
+        int maxPhi = 180;
+
+        List<Vector3> thetaPos = new List<Vector3>();
+
+        for (int i = 2; i < maxPhi; i++)
+        {
+            Toricmanifold manifold = new Toricmanifold(alpha, theta, i, target1, target2);
+            thetaPos.Add(manifold.ToWorldPosition());
+        }
+        for (int i = -maxPhi; i < 0; i++)
+        {
+            Toricmanifold manifold = new Toricmanifold(alpha, theta, i, target1, target2);
+            thetaPos.Add(manifold.ToWorldPosition());
+        }
+
+        Vector3 priorPos = tm.ToWorldPosition();
+        foreach (Vector3 pos in thetaPos)
+        {
+            Debug.DrawLine(priorPos, pos, Color.black, Mathf.Infinity, false);
+            priorPos = pos;
+        }
+    }
+
+    private void visualizeToricSpace()
+    {
+        Toricmanifold tm = new Toricmanifold(alpha, 1, 1, target1, target2);
+        int maxPhi = 180;
+        float maxTheta = tm.getMaxTheta();
+
+
+        for (int j = 0; j < maxTheta; j += 3)
+        {
+           List<Vector3> phiPos = new List<Vector3>();
+        for (int i = 2; i < maxPhi; i++)
+        {
+            Toricmanifold manifold = new Toricmanifold(alpha, j, i, target1, target2);
+            phiPos.Add(manifold.ToWorldPosition());
+        }
+        for (int i = -maxPhi; i < 0; i++)
+        {
+            Toricmanifold manifold = new Toricmanifold(alpha, j, i, target1, target2);
+            phiPos.Add(manifold.ToWorldPosition());
+        }
+
+            Vector3 priorPos = tm.ToWorldPosition();
+            foreach (Vector3 pos in phiPos)
+            {
+                Debug.DrawLine(priorPos, pos, Color.black, Mathf.Infinity, false);
+                priorPos = pos;
+            }
+        }   
     }
 
 
