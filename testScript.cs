@@ -65,10 +65,10 @@ public class testScript : MonoBehaviour
         // testGetAlphaFromDistanceB(); //TODO
         //testIntervalFromOnscreenPos();
         //testIntervalFromB();
-       testVantageAngleConstraintA(); //TODO
+       //testVantageAngleConstraintA(); //TODO
                                       //testVisibility();
                                        //testAllConstraints(); //TODO
-                                                             //visualizeTheta();
+                                                             visualizeTheta();
                                                              //visualizePhi();
                                                              // visualizeToricSpace();
         priorAlpha = alpha;
@@ -262,6 +262,7 @@ public class testScript : MonoBehaviour
 
     private void visualizeTheta()
     {
+        float givenTheta = theta;
         Toricmanifold tm = new Toricmanifold(alpha, 1f, phi, target1, target2);
         new Ellipse(.01f, .01f, tm.ToWorldPosition(),Vector3.up).draw(Color.red);
 
@@ -281,6 +282,9 @@ public class testScript : MonoBehaviour
             Debug.DrawLine(priorPos, pos, Color.gray, Mathf.Infinity, false);
             priorPos = pos;
         }
+
+         tm = new Toricmanifold(alpha, givenTheta, phi, target1, target2);
+        new Ellipse(.01f, .01f, tm.ToWorldPosition(), Vector3.up).draw(Color.blue);
     }
 
     private void visualizePhi()
