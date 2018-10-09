@@ -115,7 +115,7 @@ internal class Ellipse : conicSection
         
             Quaternion q = Quaternion.AngleAxis(_rotation, _normal);
             q *= Quaternion.LookRotation(_normal);
-            Debug.Log(_normal);
+
 
             for (int i = 0; i <= resolution; i++)
             {

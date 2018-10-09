@@ -62,15 +62,15 @@ public class testScript : MonoBehaviour
         //StartDebug();
         //StartCamera();
         //StartComputing();
-        // testGetAlphaFromDistanceB(); //TODO
+        //testGetAlphaFromDistanceB(); //TODO
         //testIntervalFromOnscreenPos();
         //testIntervalFromB();
-       //testVantageAngleConstraintA(); //TODO
+       //testVantageAngleConstraintA(); 
                                       //testVisibility();
-                                       //testAllConstraints(); //TODO
-                                                             visualizeTheta();
+                                       testAllConstraints(); //TODO
+                                                             //visualizeTheta();
                                                              //visualizePhi();
-                                                             // visualizeToricSpace();
+                                                             //visualizeToricSpace();
         priorAlpha = alpha;
         priorTheta = theta;
         priorPhi = phi;
@@ -174,6 +174,7 @@ public class testScript : MonoBehaviour
     {
         Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
         test.SetDesiredPosition(screenPos1, screenPos2);
+        visualizeTheta();
 
         Vector3 posTest = test.ToWorldPosition();
         Quaternion rotTest = test.ComputeOrientation(posTest, tilt);
@@ -294,12 +295,7 @@ public class testScript : MonoBehaviour
 
         List<Vector3> thetaPos = new List<Vector3>();
 
-        for (int i = 2; i < maxPhi; i++)
-        {
-            Toricmanifold manifold = new Toricmanifold(alpha, theta, i, target1, target2);
-            thetaPos.Add(manifold.ToWorldPosition());
-        }
-        for (int i = -maxPhi; i < 0; i++)
+        for (int i = -maxPhi; i < maxPhi; i++)
         {
             Toricmanifold manifold = new Toricmanifold(alpha, theta, i, target1, target2);
             thetaPos.Add(manifold.ToWorldPosition());
@@ -308,13 +304,14 @@ public class testScript : MonoBehaviour
         Vector3 priorPos = tm.ToWorldPosition();
         foreach (Vector3 pos in thetaPos)
         {
-            Debug.DrawLine(priorPos, pos, Color.black, Mathf.Infinity, false);
+            Debug.DrawLine(priorPos, pos, Color.grey, Mathf.Infinity, false);
             priorPos = pos;
         }
     }
 
     private void visualizeToricSpace()
     {
+
         Toricmanifold tm = new Toricmanifold(alpha, 1, 1, target1, target2);
         int maxPhi = 180;
         float maxTheta = tm.getMaxTheta();
@@ -322,25 +319,21 @@ public class testScript : MonoBehaviour
 
         for (int j = 0; j < maxTheta; j += 3)
         {
-           List<Vector3> phiPos = new List<Vector3>();
-        for (int i = 2; i < maxPhi; i++)
-        {
-            Toricmanifold manifold = new Toricmanifold(alpha, j, i, target1, target2);
-            phiPos.Add(manifold.ToWorldPosition());
-        }
-        for (int i = -maxPhi; i < 0; i++)
-        {
-            Toricmanifold manifold = new Toricmanifold(alpha, j, i, target1, target2);
-            phiPos.Add(manifold.ToWorldPosition());
-        }
+            List<Vector3> phiPos = new List<Vector3>();
+            
+            for (int i = -maxPhi; i < maxPhi; i++)
+            {
+                Toricmanifold manifold = new Toricmanifold(alpha, j, i, target1, target2);
+                phiPos.Add(manifold.ToWorldPosition());
+            }
 
             Vector3 priorPos = tm.ToWorldPosition();
             foreach (Vector3 pos in phiPos)
             {
-                Debug.DrawLine(priorPos, pos, Color.black, Mathf.Infinity, false);
+                Debug.DrawLine(priorPos, pos, Color.grey, Mathf.Infinity, false);
                 priorPos = pos;
             }
-        }   
+        }
     }
 
 
