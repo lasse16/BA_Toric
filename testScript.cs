@@ -62,15 +62,18 @@ public class testScript : MonoBehaviour
         //StartDebug();
         //StartCamera();
         //StartComputing();
-        //testGetAlphaFromDistanceB(); //TODO
+        //testGetAlphaFromDistanceB(); 
+        //testGetAlphaFromDistanceA(); 
         //testIntervalFromOnscreenPos();
-        //testIntervalFromB();
-       //testVantageAngleConstraintA(); 
-                                      //testVisibility();
-                                       testAllConstraints(); //TODO
-                                                             //visualizeTheta();
-                                                             //visualizePhi();
-                                                             //visualizeToricSpace();
+        //testVantageAngleConstraint();
+        //testVantageAngleConstraintA();
+        //testVantageAngleConstraintB();
+        //testGetAlphaFromDistance();
+        //testVisibility();
+        testAllConstraints(); //TODO
+        //visualizeTheta();
+        //visualizePhi();
+        //visualizeToricSpace();
         priorAlpha = alpha;
         priorTheta = theta;
         priorPhi = phi;
@@ -100,6 +103,30 @@ public class testScript : MonoBehaviour
         StartCamera();
     }
 
+    private void testVantageAngleConstraint()
+    {
+        ToricComputing tc = new ToricComputing(target1, target2);
+        Dictionary<float, Interval> phisA = tc.getThetaIntervallFromVantageBothTargets( vantageDirectionA, deviationAngleA, vantageDirectionB,deviationAngleB, 1/samplingRate);
+
+
+        //DEBUG
+        float[] keys = new float[phisA.Keys.Count];
+        phisA.Keys.CopyTo(keys, 0);
+
+        phi = keys[UnityEngine.Random.Range(0, keys.Length - 2)];
+        Interval betaRange;
+        phisA.TryGetValue(phi, out betaRange);
+        phi = phi * Mathf.Rad2Deg;
+        Debug.Log(betaRange);
+        theta =betaRange.getRandom() * Mathf.Rad2Deg;
+        Debug.Log(theta);
+
+        Debug.Log(phi);
+
+
+        StartDebug();
+    }
+
     private void testVantageAngleConstraintA()
     {
         ToricComputing tc = new ToricComputing(target1, target2);
@@ -118,6 +145,31 @@ public class testScript : MonoBehaviour
         theta = 2 * betaRange.getRandom() * Mathf.Rad2Deg;
         Debug.Log(theta);
         
+        Debug.Log(phi);
+
+
+        StartDebug();
+    }
+
+
+    private void testVantageAngleConstraintB()
+    {
+        ToricComputing tc = new ToricComputing(target1, target2);
+        Dictionary<float, Interval> phisA = tc.getPositionFromVantageOneTarget(2, vantageDirectionB, deviationAngleB);
+
+
+        //DEBUG
+        float[] keys = new float[phisA.Keys.Count];
+        phisA.Keys.CopyTo(keys, 0);
+
+        phi = keys[UnityEngine.Random.Range(0, keys.Length - 2)];
+        Interval betaRange;
+        phisA.TryGetValue(phi, out betaRange);
+        phi = phi * Mathf.Rad2Deg;
+        Debug.Log(betaRange);
+        theta = 2 *(Mathf.PI - alpha * Mathf.Deg2Rad - betaRange.getRandom()) * Mathf.Rad2Deg;
+        Debug.Log(theta);
+
         Debug.Log(phi);
 
 
@@ -174,7 +226,7 @@ public class testScript : MonoBehaviour
     {
         Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
         test.SetDesiredPosition(screenPos1, screenPos2);
-        visualizeTheta();
+        
 
         Vector3 posTest = test.ToWorldPosition();
         Quaternion rotTest = test.ComputeOrientation(posTest, tilt);
@@ -187,13 +239,53 @@ public class testScript : MonoBehaviour
         
     }
 
+    private void testGetAlphaFromDistance()
+    {
+        ToricComputing tc = new ToricComputing(target1, target2);
+        Dictionary<float, Interval> alphaInv = tc.getIntervalOfAcceptedAlpha(distanceToA,distanceToB);
+
+        Interval alphaRange;
+        float[] keys = new float[alphaInv.Keys.Count];
+        alphaInv.Keys.CopyTo(keys, 0);
+        if (alphaInv.Keys.Count - 2 <= 0) throw new Exception("No intersection");
+        theta = keys[UnityEngine.Random.Range(0, alphaInv.Keys.Count - 2)];
+        alphaInv.TryGetValue(theta, out alphaRange);
+
+
+        alpha = alphaRange.getRandom() * Mathf.Rad2Deg;
+        theta *= Mathf.Rad2Deg;
+
+        Debug.Log(alphaRange);
+        Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
+        Vector3 posTest = test.ToWorldPosition();
+        Quaternion rotTest = test.ComputeOrientation(posTest, tilt);
+        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+
+        //DEBUG
+        Debug.Log("distance: " + (posTest - target1.transform.position).magnitude);
+        Debug.Log("distance: " + (posTest - target2.transform.position).magnitude);
+
+        cube.transform.position = posTest;
+        cube.transform.rotation = rotTest;
+    }
+
     private void testGetAlphaFromDistanceA()
     {
         ToricComputing tc = new ToricComputing(target1, target2);
-        float alphaTestMin = tc.testDistanceFromA(distanceToA[0], theta);
-        float alphaTestMax = tc.testDistanceFromA(distanceToA[1], theta);
+        Dictionary<float,Interval> alphaInv = tc.getIntervalFromA(distanceToA[0], distanceToA[1]);
 
-        Toricmanifold test = new Toricmanifold(alphaTestMax, theta, phi, target1, target2);
+        Interval alphaRange;
+        float[] keys = new float[alphaInv.Keys.Count];
+        alphaInv.Keys.CopyTo(keys, 0);
+        theta = keys[UnityEngine.Random.Range(0, alphaInv.Keys.Count - 2)];
+        alphaInv.TryGetValue(theta, out alphaRange);
+        
+
+        alpha = alphaRange.getRandom() * Mathf.Rad2Deg;
+        theta *= Mathf.Rad2Deg;
+
+        Debug.Log(alphaRange);
+        Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
         Vector3 posTest = test.ToWorldPosition();
         Quaternion rotTest = test.ComputeOrientation(posTest, tilt);
         GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -208,18 +300,31 @@ public class testScript : MonoBehaviour
     private void testGetAlphaFromDistanceB()
     {
         ToricComputing tc = new ToricComputing(target1, target2);
-        Interval alphaTestMin = tc.GetAlphaFromDistanceToB(distanceToB[0], theta);
-        Interval alphaTestMax = tc.GetAlphaFromDistanceToB(distanceToB[1], theta);
+        Dictionary<float, Interval> alphaTheta = tc.getIntervalFromB(distanceToB[0], distanceToB[1],.05f);
 
+        Interval alphaRange;
+        float[] keys = new float[alphaTheta.Keys.Count];
+        alphaTheta.Keys.CopyTo(keys, 0);
+        theta = keys[UnityEngine.Random.Range(0, alphaTheta.Keys.Count - 2)];
+        alphaTheta.TryGetValue(theta, out alphaRange);
 
-        Interval alphaInterval =  alphaTestMin - alphaTestMax ;
-        alpha = alphaInterval.getRandom();
+        
+
+        alpha = alphaRange.getRandom() * Mathf.Rad2Deg;
+        theta *= Mathf.Rad2Deg;
+
+        Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
+        Vector3 posTest = test.ToWorldPosition();
+        Quaternion rotTest = test.ComputeOrientation(posTest, tilt);
+        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
         //DEBUG
-        Debug.Log(alphaInterval);
+        Debug.Log("ThetaRange: " + Interval.fromFloatArray(keys));
+        Debug.Log(alphaRange);
+        Debug.Log("distance: " + (posTest - target2.transform.position).magnitude);
 
-
-        StartDebug();
+        cube.transform.position = posTest;
+        cube.transform.rotation = rotTest;
     }
 
     private void testIntervalFromOnscreenPos()
@@ -339,6 +444,9 @@ public class testScript : MonoBehaviour
 
     void Update()
     {
-        if (priorAlpha != alpha || priorPhi != phi || priorTheta != theta || priorTilt != tilt || !priorVantageA.Equals(vantageDirectionA) || !priorVantageB.Equals(vantageDirectionB)) Start();
+        if (priorAlpha != 0 && priorTheta != 0)
+        {
+            if (priorAlpha != alpha || priorPhi != phi || priorTheta != theta || priorTilt != tilt || !priorVantageA.Equals(vantageDirectionA) || !priorVantageB.Equals(vantageDirectionB)) Start();
+        }
     }
 }

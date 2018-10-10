@@ -132,6 +132,7 @@ public class Interval
 
     public float getRandom()
     {
+
         List<float> values = getEveryValue();
         
         int key = UnityEngine.Random.Range(0, values.Count-1);
