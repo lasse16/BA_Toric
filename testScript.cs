@@ -69,7 +69,7 @@ public class testScript : MonoBehaviour
         //testVantageAngleConstraintB();
         
         //testVisibility();
-        testAllConstraints(); //TODO
+        testAllConstraints();
         //visualizeTheta();
         //visualizePhi();
         //visualizeToricSpace();

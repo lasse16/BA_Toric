@@ -94,7 +94,7 @@ public class ToricComputing
 
         Interval phiInv = phiA.Intersect(phiB);
 
-
+        if (phiInv == null) throw new Exception("No intersection");
         possiblePhiIntersect = phiInv.filterArray(phiAKeys);
 
 
@@ -108,11 +108,6 @@ public class ToricComputing
 
         }
         return res;
-    }
-
-    public Interval getPhiInterval()
-    {
-            return Interval.fromFloatArray(possiblePhiIntersect); 
     }
 
 
@@ -152,7 +147,7 @@ public class ToricComputing
                 alphaVANTThetaPhi = _alphaComputer.GetVantageAlphaInterval(theta, betaInvB);
 
 
-                Debug.Log("AlphaOnScreenPosition: " + alphaOSP + "Alpha DistanceToTargets: " + alphaDISTTheta + "Alpha Vantage Constraint: " + alphaVANTThetaPhi);
+                Debug.Log("AlphaOnScreenPosition: " + alphaOSP * Mathf.Rad2Deg + "Alpha DistanceToTargets: " + alphaDISTTheta * Mathf.Rad2Deg + "Alpha Vantage Constraint: " + alphaVANTThetaPhi * Mathf.Rad2Deg);
 
 
                 Interval alphaSecond = alphaOSP.Intersect(alphaDISTTheta);
@@ -267,10 +262,36 @@ public class ToricComputing
 
     //Helper methods
 
+    public static Vector3 FromWorldPosition(Vector3 CamPos, Vector3 target1, Vector3 target2)
+    {
+        Vector3 AB = target2-target1;
+        Vector3 AP = CamPos-target1;
+
+        Vector3 n = Vector3.Cross(AP,AB).normalized;
+        Vector3 z;
+
+        Vector2 n2 = new Vector2(AB.x, AB.z);
+
+        float tmp = n2[0];
+        n2[0] = n2[1];
+        n2[1] = -tmp;
+
+       z = new Vector3(n2.x,0 , n2.y).normalized;
+
+
+        float beta = Vector3.Angle(AB, AP) * Mathf.Deg2Rad;
+        float alpha = Vector3.Angle(AP,CamPos - target2) * Mathf.Deg2Rad;
+        float theta = beta * 2 * Mathf.Deg2Rad;
+        float phi = Vector3.SignedAngle(n, -AB, z) * Mathf.Deg2Rad - Mathf.PI / 2;
+
+        return new Vector3(alpha, theta, phi);
+    }
 
 
 
-   
+
+
+
 
     private Dictionary<float, Interval> ClearDictionaryValues(Dictionary<float, Interval> ia)
     {

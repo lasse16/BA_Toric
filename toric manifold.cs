@@ -100,6 +100,9 @@ public class Toricmanifold
         return C;
     }
 
+
+    
+
     /// <summary>
     /// Computes the proper orientation to put the targets at the screen positions
     /// </summary>

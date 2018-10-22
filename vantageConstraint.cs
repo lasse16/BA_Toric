@@ -10,64 +10,53 @@ public class vantageConstraint
     private Vector3 B;
     private Vector3 _targetPosition;
 
-	public vantageConstraint(Vector3 A , Vector3 B)
-	{
-        _AB = B-A;
-	}
+    public vantageConstraint(Vector3 a, Vector3 b)
+    {
+        _AB = b - a;
+        A = a;
+        B = b;
 
+    }
+
+    /// <summary>
+    /// Creates a dictionary, in which the phi values act as keys. To each an interval for beta  is saved
+    /// </summary>
+    /// <param name="targetPosition">vantage contraint for a target position</param>
+    /// <param name="v">the vantage direction</param>
+    /// <param name="deviationAngle">the allowed angle of deviation around the direction v</param>
+    /// <param name="samplingRate">the samplingRate of the phi keys</param>
+    /// <returns>a dictionary of phi keys and a beta interval as a value</returns>
     public Dictionary<float, Interval> getPositionFromVantageOneTarget(Vector3 targetPosition, Vector3 v, float deviationAngle, float samplingRate = 0.01f)
     {
         _targetPosition = targetPosition;
 
         if (v.Equals(Vector3.zero)) throw new Exception("No Vantage constraint set");
-        if (deviationAngle > 90) throw new Exception("choose a deviattion angle smaller 90°");
+        if (deviationAngle > 90) throw new Exception("choose a deviation angle smaller 90°");
 
-
+        //Adjust to target constellation
         Vector3 upOnPlane, Vflat, PHIflat, vectorOnPlane;
-
-        float phiVector = 0;
-
-
-
         Plane targetlevel = new Plane(Vector3.up, _targetPosition);
-
         vectorOnPlane = targetlevel.ClosestPointOnPlane(_targetPosition + v) - _targetPosition;
-
         upOnPlane = Vector3.ProjectOnPlane(Vector3.up, _AB);
-
         Vector3 phiZero = Vector3.Cross(upOnPlane, _AB);
 
-
-
+        //calculate the prior phi of the vantage vector
         Vflat = Vector3.ProjectOnPlane(v.normalized, _AB);
         PHIflat = Vector3.ProjectOnPlane(phiZero.normalized, _AB);
-        phiVector = Vector3.SignedAngle(Vflat, PHIflat, -_AB) * Mathf.Deg2Rad;
+        float phiVector = Vector3.SignedAngle(Vflat, PHIflat, -_AB) * Mathf.Deg2Rad;
 
 
-        v = vectorOnPlane;
-
-
-        Vector3 prefferedVantageAngle = v.normalized;
-
-
+        Vector3 prefferedVantageAngle = vectorOnPlane.normalized;
         float signedLambda = Vector3.SignedAngle(_AB, prefferedVantageAngle, upOnPlane) * Mathf.Deg2Rad;
-
         float lambda = Mathf.Abs(signedLambda);
         deviationAngle *= Mathf.Deg2Rad;
 
-
-        Vector2 x, y, y2;
+        //Initialise variables
+        Vector2 x, y;
         float a, b, c;
         Interval phiIntervall;
         Dictionary<float, Interval> res = new Dictionary<float, Interval>();
         List<Vector2> possibleIntersections = new List<Vector2>();
-
-
-
-
-
-
-
         Boolean greaterThanHalfPi = lambda > Mathf.PI / 2;
         if (greaterThanHalfPi) lambda = Mathf.PI - lambda;
 
@@ -78,6 +67,9 @@ public class vantageConstraint
 
 
 
+        //Find the appropiate equation for the conic section
+        //Then create a phi interval for that cone, for each phi in that interval
+        //create a beta interval and save it in the dictionary
         switch (checkConicSection(lambda, vantageCone))
         {
 
@@ -97,9 +89,7 @@ public class vantageConstraint
                 Debug.Log("Ellipse");
 
                 //Ellipses too small, are treated like circles 
-                float lambdaTest = lambda;
-                if (lambda > Mathf.PI / 2) lambdaTest = Mathf.PI - lambda;
-                if (deviationAngle > lambdaTest) goto case -3;
+                if (deviationAngle > lambda) goto case -3;
 
 
                 float sinDeviation = Mathf.Sin(deviationAngle);
@@ -108,34 +98,12 @@ public class vantageConstraint
                 float minorDistance = sinDeviation / Mathf.Sqrt((Mathf.Abs(Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2))));
                 float midPointDistance = (Mathf.Sin(lambda) * coslambda) / Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2);
 
-
-
-
-
-
-
-
                 a = Mathf.Pow(minorDistance, 2) - Mathf.Pow(majorDistance, 2);
                 b = -2 * Mathf.Pow(minorDistance, 2) * Mathf.Abs(midPointDistance);
                 c = Mathf.Pow(minorDistance, 2) * Mathf.Pow(midPointDistance, 2) + Mathf.Pow(majorDistance, 2) * (Mathf.Pow(r, 2) - Mathf.Pow(minorDistance, 2));
 
 
-
-
-                x = solveQuadraticEquation(a, b, c);
-
-
-                y.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.x, 2)));
-                y.y = -y.x;
-                y2.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.y, 2)));
-                y2.y = -y2.x;
-                y = sortVector2(y);
-                y2 = sortVector2(y2);
-
-
-                possibleIntersections = combineAllXandYValues(x, y, y2);
-
-
+                possibleIntersections = calculateCircleIntersection(a, b, c, r);
 
                 phiIntervall = appropiatePhiIntervalBounds(new Vector2(Mathf.Abs(possibleIntersections.First().x), Mathf.Abs(possibleIntersections.First().y)), samplingRate);
 
@@ -156,50 +124,30 @@ public class vantageConstraint
                         b = -2 * Mathf.Pow(minorDistance, 2) * midPointDistance;
                         c = Mathf.Pow(minorDistance, 2) * (Mathf.Pow(midPointDistance, 2) - Mathf.Pow(majorDistance, 2));
 
-                        x = solveQuadraticEquation(a, b, c);
+
+                        Vector2[] lineIntersections = calculateCircleIntersectionLineIntersection(a, b, c, phi);
 
 
 
-
-
-
-                        if (Mathf.Sign(Mathf.Cos(phi)) != Mathf.Sign(x.x)) x.x *= -1;
-                        if (Mathf.Sign(Mathf.Cos(phi)) != Mathf.Sign(x.y)) x.y *= -1;
-                        y.x = Mathf.Tan(phi) * x.x;
-                        y.y = Mathf.Tan(phi) * x.y;
-
-
-                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), greaterThanHalfPi));
-                    }              
+                        res.Add(phi, appropiateBetaIntervalBounds(lineIntersections[0], lineIntersections[1], greaterThanHalfPi));
+                    }
                 }
 
                 break;
 
-            case -1: //conic section = par_ABola
-                Debug.Log("Par_ABola");
+            case -1: //conic section = parabola
+                Debug.Log("Parabola");
 
                 float cotlambda = 1 / Mathf.Tan(lambda);
                 float h = (Mathf.Tan(lambda) - cotlambda) / 2;
                 float f = cotlambda / 2;
                 h *= Mathf.Sign(signedLambda);
 
-                Debug.Log("Height : " + h);
+                a = -1;
+                b = -4 * f;
+                c = 4 * f * Mathf.Abs(h) + Mathf.Pow(r, 2);
 
-                x = solveQuadraticEquation(-1, -4 * f, 4 * f * Mathf.Abs(h) + Mathf.Pow(r, 2));
-                x.x *= Mathf.Sign(signedLambda);
-                x.y *= Mathf.Sign(signedLambda);
-
-                y.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.x, 2)));
-                y.y = -y.x;
-                y2.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.y, 2)));
-                y2.y = -y2.x;
-                y = sortVector2(y);
-                y2 = sortVector2(y2);
-                possibleIntersections = combineAllXandYValues(x, y, y2);
-
-
-
-
+                possibleIntersections = calculateCircleIntersection(a, b, c, r);
 
                 float intersectionX = possibleIntersections.First().x;
                 float intersectionY = possibleIntersections.First().y;
@@ -222,17 +170,12 @@ public class vantageConstraint
                         a = Mathf.Pow(Mathf.Tan(phi), 2);
                         b = -4 * f;
                         c = 4 * f * h;
-                        x = solveQuadraticEquation(a, b, c);
 
-                        if (Mathf.Sign(Mathf.Cos(phi)) != Mathf.Sign(x.x)) x.x *= -1;
-                        if (Mathf.Sign(Mathf.Cos(phi)) != Mathf.Sign(x.y)) x.y *= -1;
+                        Vector2[] lineIntersections = calculateCircleIntersectionLineIntersection(a, b, c, phi);
 
-                        y.x = Mathf.Tan(phi) * x.x;
-                        y.y = Mathf.Tan(phi) * x.y;
-                        //DEBUG
-                        Debug.Log(y);
 
-                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), greaterThanHalfPi));
+
+                        res.Add(phi, appropiateBetaIntervalBounds(lineIntersections[0], lineIntersections[1], greaterThanHalfPi));
                     }
 
                 }
@@ -248,36 +191,17 @@ public class vantageConstraint
                 midPointDistance = (Mathf.Sin(lambda) * coslambda) / Mathf.Pow(coslambda, 2) - Mathf.Pow(sinDeviation, 2);
 
 
-
-
                 a = Mathf.Pow(minorDistance, 2) + Mathf.Pow(majorDistance, 2);
                 b = -2 * Mathf.Pow(minorDistance, 2) * Mathf.Abs(midPointDistance);
                 c = Mathf.Pow(minorDistance, 2) * Mathf.Pow(midPointDistance, 2) - Mathf.Pow(majorDistance, 2) * (Mathf.Pow(r, 2) + Mathf.Pow(minorDistance, 2));
 
-                x = solveQuadraticEquation(a, b, c);
-
-
-                y.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.x, 2)));
-
-                y.y = -y.x;
-                y2.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.y, 2)));
-                y2.y = -y2.x;
-                y = sortVector2(y);
-                y2 = sortVector2(y2);
-
-
-                possibleIntersections = combineAllXandYValues(x, y, y2);
-
-
-
-                if (possibleIntersections.Count == 0) throw new Exception("No solution possible");
+                possibleIntersections = calculateCircleIntersection(a, b, c, r);
 
                 intersectionX = possibleIntersections.First().x;
                 intersectionY = possibleIntersections.First().y;
 
 
                 phiIntervall = appropiatePhiIntervalBounds(new Vector2(Mathf.Abs(intersectionX), Mathf.Abs(intersectionY)), samplingRate);
-
 
                 foreach (float phi in phiIntervall.getEveryValue())
                 {
@@ -293,23 +217,12 @@ public class vantageConstraint
                     {
                         a = Mathf.Pow(minorDistance, 2) - Mathf.Pow(majorDistance, 2) * Mathf.Pow(Mathf.Tan(phi), 2);
                         b = -2 * Mathf.Pow(minorDistance, 2) * midPointDistance;
+                        c = Mathf.Pow(minorDistance, 2) * (Mathf.Pow(midPointDistance, 2) - Mathf.Pow(majorDistance, 2));
 
 
-                        x = solveQuadraticEquation(a, b, Mathf.Pow(minorDistance, 2) * (Mathf.Pow(midPointDistance, 2) - Mathf.Pow(majorDistance, 2)));
+                        Vector2[] lineIntersections = calculateCircleIntersectionLineIntersection(a, b, c, phi);
 
-
-
-                        if (Mathf.Sign(Mathf.Cos(phi)) != Mathf.Sign(x.x)) x.x *= -1;
-                        if (Mathf.Sign(Mathf.Cos(phi)) != Mathf.Sign(x.y)) x.y *= -1;
-
-                        y.x = Mathf.Tan(phi) * x.x;
-                        y.y = Mathf.Tan(phi) * x.y;
-
-
-
-
-
-                        res.Add(phi, appropiateBetaIntervalBounds(new Vector2(x.y, y.y), new Vector2(x.x, y.x), greaterThanHalfPi));
+                        res.Add(phi, appropiateBetaIntervalBounds(lineIntersections[0], lineIntersections[1], greaterThanHalfPi));
                     }
                 }
 
@@ -334,6 +247,7 @@ public class vantageConstraint
                 throw new Exception();
 
         }
+        //Adjust the interval to the default phi of th vantage vector
         foreach (float key in res.Keys.ToArray())
         {
             Interval beta;
@@ -346,6 +260,46 @@ public class vantageConstraint
         return res;
     }
 
+
+
+
+
+    //private methods
+
+
+    private Vector2[] calculateCircleIntersectionLineIntersection(float a, float b, float c, float phi)
+    {
+        Vector2 x, y;
+        Vector2[] res = new Vector2[2];
+        x = solveQuadraticEquation(a, b, c);
+
+        if (Mathf.Sign(Mathf.Cos(phi)) != Mathf.Sign(x.x)) x.x *= -1;
+        if (Mathf.Sign(Mathf.Cos(phi)) != Mathf.Sign(x.y)) x.y *= -1;
+        y.x = Mathf.Tan(phi) * x.x;
+        y.y = Mathf.Tan(phi) * x.y;
+
+        res[0] = x;
+        res[1] = y;
+
+        return res;
+    }
+
+    private List<Vector2> calculateCircleIntersection(float a, float b, float c, float r)
+    {
+        Vector2 x, y, y2;
+        x = solveQuadraticEquation(a, b, c);
+
+
+        y.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.x, 2)));
+        y.y = -y.x;
+        y2.x = Mathf.Sqrt(Mathf.Pow(r, 2) - (Mathf.Pow(x.y, 2)));
+        y2.y = -y2.x;
+        y = sortVector2(y);
+        y2 = sortVector2(y2);
+
+
+        return combineAllXandYValues(x, y, y2);
+    }
 
     private List<Vector2> combineAllXandYValues(Vector2 x, Vector2 y, Vector2 y2)
     {
@@ -375,9 +329,9 @@ public class vantageConstraint
 
     }
 
-    private void Visualize(Vector3 __targetPosition, float r, float lambda, Cone vantageCone, List<Vector2> possibleIntersections, float majorDistance, float minorDistance)
+ 
+    private void _visualize(Vector3 __targetPosition, float r, float lambda, Cone vantageCone, List<Vector2> possibleIntersections, float majorDistance, float minorDistance)
     {
-
         float coneHeight = Mathf.Sqrt(1 + r * r);
 
 
@@ -405,23 +359,14 @@ public class vantageConstraint
         {
             throw new Exception("no intersection between the vantage");
         }
-
-
-        //RES 1 Thesis
         float phiBoundsRes1 = Mathf.Atan(x.y / x.x);
-
-
-
-
         return new Interval(phiBoundsRes1, -phiBoundsRes1, samplingRate);
-
-
     }
 
     private Interval appropiateBetaIntervalBounds(Vector2 beta1, Vector2 beta2, Boolean greaterHalfPi)
     {
 
-        //RES 2 Paper
+
         float sqrtBeta1 = Mathf.Sqrt(beta1.x * beta1.x + beta1.y * beta1.y);
         float sqrtBeta2 = Mathf.Sqrt(beta2.x * beta2.x + beta2.y * beta2.y);
 
@@ -442,11 +387,6 @@ public class vantageConstraint
 
         return new Interval(lowerBeta, upperBeta);
     }
-
-
-
-
-    //private methods
 
 
     private void DrawPlane(Vector3 position, Vector3 normal)
@@ -481,15 +421,17 @@ public class vantageConstraint
         switch (checkBetaForPlane(beta))
         {
             case -1:
+                float differentEquals = beta + vantageCone._deviationAngle - Mathf.PI / 2;
+                Debug.Log(differentEquals);
                 if (beta == 0) return -3; //circle
+                if ((differentEquals < 0.00001f) && (Mathf.Abs(differentEquals) <= 0.00001f)) return -1; //parabola
                 if (beta + vantageCone._deviationAngle < Mathf.PI / 2) return -2; //ellipse
-                if (beta + vantageCone._deviationAngle == Mathf.PI / 2) return -1; // parabola
                 else return 0; //hyperbola
             case 0:
                 if (beta + vantageCone._deviationAngle == Mathf.PI / 2) return 1;
                 else return 2;
             case 1:
-                float differentEquals = beta - vantageCone._deviationAngle - (Mathf.PI / 2);
+                 differentEquals = beta - vantageCone._deviationAngle - (Mathf.PI / 2);
 
                 if (beta == Mathf.PI) return -3; //circle
                 if (beta - vantageCone._deviationAngle > Mathf.PI / 2) return -2; // ellipse
