@@ -265,24 +265,17 @@ public class ToricComputing
     public static Vector3 FromWorldPosition(Vector3 CamPos, Vector3 target1, Vector3 target2)
     {
         Vector3 AB = target2-target1;
-        Vector3 AP = CamPos-target1;
+        Vector3 AP = CamPos - target1;
+        Vector3 BP = CamPos - target2;
 
-        Vector3 n = Vector3.Cross(AP,AB).normalized;
-        Vector3 z;
-
-        Vector2 n2 = new Vector2(AB.x, AB.z);
-
-        float tmp = n2[0];
-        n2[0] = n2[1];
-        n2[1] = -tmp;
-
-       z = new Vector3(n2.x,0 , n2.y).normalized;
-
+        Vector3 upOnPlane = Vector3.ProjectOnPlane(Vector3.up, AB);
+        Vector3 APonPlane = Vector3.ProjectOnPlane(AP, AB);
+        Vector3 phiZero = Vector3.Cross(upOnPlane, AB);
 
         float beta = Vector3.Angle(AB, AP) * Mathf.Deg2Rad;
-        float alpha = Vector3.Angle(AP,CamPos - target2) * Mathf.Deg2Rad;
-        float theta = beta * 2 * Mathf.Deg2Rad;
-        float phi = Vector3.SignedAngle(n, -AB, z) * Mathf.Deg2Rad - Mathf.PI / 2;
+        float alpha = Vector3.Angle(AP,BP) * Mathf.Deg2Rad;
+        float theta = beta * 2 ;
+        float phi = Vector3.SignedAngle(phiZero,APonPlane , -AB) * Mathf.Deg2Rad;
 
         return new Vector3(alpha, theta, phi);
     }

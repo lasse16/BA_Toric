@@ -109,9 +109,11 @@ public class Toricmanifold
     /// <param name="camPos"></param>
     /// <param name="TiltAngle">user-wished tilt angle in Degrees</param>
     /// <returns></returns>
-    public Quaternion ComputeOrientation(Vector3 camPos, float TiltAngle = 0)
+    public Quaternion ComputeOrientation(float TiltAngle = 0)
     {
         if (!screenPosSet) throw new Exception("Please set the screen positions");
+
+        Vector3 camPos = this.ToWorldPosition();
 
         Quaternion qLook = computeLookAt(camPos);
 
@@ -158,13 +160,24 @@ public class Toricmanifold
         return _phi.angle();
     }
 
+    public Vector2[] getDesiredScreenPositions()
+    {
+        return new Vector2[] { screenPositionA, screenPositionB };
+    }
     override
     public String ToString()
     {
         return "Alpha: " + _alpha.angle() + "Theta: " + _theta.angle() + "Phi: " + _phi.angle() + "Visibility: " + ToricComputing.visibilityCheck(this);
     }
 
-
+    public void visualize(Color color)
+    {
+        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        cube.transform.position = ToWorldPosition();
+        cube.transform.rotation = ComputeOrientation();
+        cube.GetComponent<Renderer>().material.color = color;
+        cube.name = ToString();
+    }
 
     //private methods
 

@@ -53,6 +53,8 @@ public class testScript : MonoBehaviour
     public Vector2 visibilityInterval;
     public float samplingRate;
 
+    public int time1;
+    public int time2;
     /**
      * Creates either a cube or a camera at the calculated position with the given location
      * 
@@ -62,14 +64,15 @@ public class testScript : MonoBehaviour
         //StartDebug();
         //StartCamera();
         //StartComputing();
- 
+
         //testIntervalFromOnscreenPos();
         //testVantageAngleConstraint();
         //testVantageAngleConstraintA();
         //testVantageAngleConstraintB();
-        
+        //testFromWorld();
+        testInterpolation(); //TODO
         //testVisibility();
-        testAllConstraints();
+        //testAllConstraints();
         //visualizeTheta();
         //visualizePhi();
         //visualizeToricSpace();
@@ -150,6 +153,44 @@ public class testScript : MonoBehaviour
         StartDebug();
     }
 
+    //TODO
+    private void testInterpolation()
+    {
+        Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
+        test.SetDesiredPosition(screenPos1, screenPos2);
+        test.visualize(Color.green);
+        Toricmanifold test2 = new Toricmanifold(alpha + 30, theta, phi, target1, target2);
+        test2.SetDesiredPosition(screenPos1, screenPos2);
+        test2.visualize(Color.red);
+
+        ViewpointInterpolation interpol = new ViewpointInterpolation(test, test2, time1, time2);
+
+        for (int i = time1; i < time2; i++)
+        {
+            Vector3 position = interpol.finalPosition(i);
+            Quaternion rotation = interpol.finalOrientation(i, position);
+
+            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Toricmanifold t = new Toricmanifold(position.x,position.y, position.z , target1, target2);
+            cube.transform.position = t.ToWorldPosition();
+            cube.transform.rotation = rotation;
+            cube.name = t.ToString();
+        }
+    }
+
+    private void testFromWorld()
+    {
+        Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
+        test.SetDesiredPosition(screenPos1, screenPos2);
+        test.visualize(Color.red);
+        Vector3 worldPos = test.ToWorldPosition();
+
+        Vector3 toricRep = ToricComputing.FromWorldPosition(worldPos, target1.transform.position, target2.transform.position);
+        Toricmanifold test2 = new Toricmanifold(toricRep.x * Mathf.Rad2Deg, toricRep.y * Mathf.Rad2Deg, toricRep.z * Mathf.Rad2Deg, target1, target2);
+        test2.SetDesiredPosition(screenPos1, screenPos2);
+        test2.visualize(Color.green); 
+    }
+
 
     private void testVantageAngleConstraintB()
     {
@@ -215,7 +256,7 @@ public class testScript : MonoBehaviour
         Camera _main = Camera.main;
 
         Vector3 posTest = test.ToWorldPosition();
-        Quaternion rotTest = test.ComputeOrientation(posTest, tilt);
+        Quaternion rotTest = test.ComputeOrientation( tilt);
 
         _main.transform.position = posTest;
         _main.transform.rotation = rotTest;
@@ -228,7 +269,7 @@ public class testScript : MonoBehaviour
 
 
         Vector3 posTest = test.ToWorldPosition();
-        Quaternion rotTest = test.ComputeOrientation(posTest, tilt);
+        Quaternion rotTest = test.ComputeOrientation( tilt);
         GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
         cube.transform.position = posTest;
@@ -257,7 +298,7 @@ public class testScript : MonoBehaviour
         Debug.Log(alphaRange);
         Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
         Vector3 posTest = test.ToWorldPosition();
-        Quaternion rotTest = test.ComputeOrientation(posTest, tilt);
+        Quaternion rotTest = test.ComputeOrientation( tilt);
         GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
         //DEBUG
