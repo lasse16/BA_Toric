@@ -17,7 +17,7 @@ public class ViewpointInterpolation
         _time1 = time1;
     }
 
-
+    
     public Vector3 finalPosition(float time)
     {
         float gP = findXOverTime(_time0, _time1, time);
@@ -65,7 +65,8 @@ public class ViewpointInterpolation
         Vector3 p0 = ToricComputing.FromWorldPosition(_keypoint1.ToWorldPosition(), targets[0], targets[1]);
         Vector3 p1 = ToricComputing.FromWorldPosition(_keypoint2.ToWorldPosition(), targets[0], targets[1]);
 
-       
+        Debug.Log(p0 * Mathf.Rad2Deg);
+        Debug.Log(p1 * Mathf.Rad2Deg);
 
         float alphaInterpolated = p0.x * x + p1.x * (1 - x);
 
@@ -93,32 +94,24 @@ public class ViewpointInterpolation
         float thetaInterpolatedB = 2 * (Mathf.PI - Vector3.Angle(interpolatedVb, AB) - alphaInterpolated);
 
 
-        Vector3 n = Vector3.Cross(interpolatedVa, AB).normalized;
-        Vector3 z;
+        Vector3 upOnPlane = Vector3.ProjectOnPlane(Vector3.up, AB);
+        Vector3 VAonPlane = Vector3.ProjectOnPlane(interpolatedVa, AB);
+        Vector3 phiZero = Vector3.Cross(upOnPlane, AB);
 
-        Vector2 n2 = new Vector2(AB.x, AB.z);
 
-        float tmp = n2[0];
-        n2[0] = n2[1];
-        n2[1] = -tmp;
+        float phiInterpolatedA = Vector3.SignedAngle(phiZero, VAonPlane, -AB) * Mathf.Deg2Rad;
 
-        z = new Vector3(n2.x, 0, n2.y).normalized;
-        float phiInterpolatedA = Vector3.SignedAngle(n, -AB, z) * Mathf.Deg2Rad - Mathf.PI / 2;
 
         Toricmanifold intersectionTa = new Toricmanifold( alphaInterpolated * Mathf.Rad2Deg, thetaInterpolatedA * Mathf.Rad2Deg, phiInterpolatedA * Mathf.Rad2Deg, targetAB._target1, targetAB._target2);
-        float distanceAT = (intersectionTa.ToWorldPosition() - targets[0]).magnitude; 
+        float distanceAT = (intersectionTa.ToWorldPosition() - targets[0]).magnitude;
 
 
-         n = Vector3.Cross(interpolatedVb, AB).normalized;
+         upOnPlane = Vector3.ProjectOnPlane(Vector3.up, AB);
+        Vector3 VBonPlane = Vector3.ProjectOnPlane(interpolatedVa, AB);
+         phiZero = Vector3.Cross(upOnPlane, AB);
 
-         n2 = new Vector2(AB.x, AB.z);
 
-         tmp = n2[0];
-        n2[0] = n2[1];
-        n2[1] = -tmp;
-
-        z = new Vector3(n2.x, 0, n2.y).normalized;
-        float phiInterpolatedB = Vector3.SignedAngle(n, -AB, z) * Mathf.Deg2Rad - Mathf.PI / 2;
+        float phiInterpolatedB = Vector3.SignedAngle(phiZero, VBonPlane, -AB) * Mathf.Deg2Rad;
 
         Toricmanifold intersectionTb = new Toricmanifold(alphaInterpolated * Mathf.Rad2Deg, thetaInterpolatedB * Mathf.Rad2Deg, phiInterpolatedB * Mathf.Rad2Deg, targetAB._target1, targetAB._target2);
         float distanceBT = (intersectionTb.ToWorldPosition() - targets[1]).magnitude;
