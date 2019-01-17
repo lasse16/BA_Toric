@@ -63,16 +63,18 @@ public class testScript : MonoBehaviour
     {
         //StartDebug();
         //StartCamera();
-        //StartComputing();
 
-        //testIntervalFromOnscreenPos();
-        //testVantageAngleConstraint();
+
+        //testProjectedSize(); //TODO
+        //testGetAlphaFromDistance();
+        //testIntervalFromOnscreenPos(); //TODO
+        testVantageAngleConstraint();
         //testVantageAngleConstraintA();
         //testVantageAngleConstraintB();
         //testFromWorld();
-        testInterpolation(); //TODO
+         //testInterpolation(); //TODO
         //testVisibility();
-        //testAllConstraints();
+       //testAllConstraints();
         //visualizeTheta();
         //visualizePhi();
         //visualizeToricSpace();
@@ -108,7 +110,7 @@ public class testScript : MonoBehaviour
     private void testVantageAngleConstraint()
     {
         ToricComputing tc = new ToricComputing(target1, target2);
-        Dictionary<float, Interval> phisA = tc.getThetaIntervallFromVantageBothTargets(vantageDirectionA, deviationAngleA, vantageDirectionB, deviationAngleB, 1 / samplingRate);
+        Dictionary<float, Interval> phisA = tc.getThetaIntervallFromVantageBothTargets(vantageDirectionA, deviationAngleA, vantageDirectionB, deviationAngleB, 1 / samplingRate, true);
 
 
         //DEBUG
@@ -153,13 +155,13 @@ public class testScript : MonoBehaviour
         StartDebug();
     }
 
-    //TODO
+    
     private void testInterpolation()
     {
         Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
         test.SetDesiredPosition(screenPos1, screenPos2);
         test.visualize(Color.green);
-        Toricmanifold test2 = new Toricmanifold(alpha + 30, theta, phi, target1, target2);
+        Toricmanifold test2 = new Toricmanifold(alpha , theta, phi + 30, target1, target2);
         test2.SetDesiredPosition(screenPos1, screenPos2);
         test2.visualize(Color.red);
 
@@ -171,10 +173,10 @@ public class testScript : MonoBehaviour
             Quaternion rotation = interpol.finalOrientation(i, position);
 
             GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            Toricmanifold t = new Toricmanifold(position.x,position.y, position.z , target1, target2);
-            cube.transform.position = t.ToWorldPosition();
+    
+            cube.transform.position = position;
             cube.transform.rotation = rotation;
-            cube.name = t.ToString();
+            cube.name = i + "";
         }
     }
 
@@ -216,13 +218,13 @@ public class testScript : MonoBehaviour
         StartDebug();
     }
 
-    private void StartComputing()
+    private void testProjectedSize()
     {
 
 
         ToricComputing tc = new ToricComputing(target1, target2);
-        Vector2 projectedSizeA = tc.DistanceFromProjectedSize(sizeToReachA, 0.5f, target1).ToVector();
-        Vector2 projectedSizeB = tc.DistanceFromProjectedSize(sizeToReachB, 0.5f, target1).ToVector();
+        Vector2 projectedSizeA = tc.DistanceFromProjectedSize(sizeToReachA, 0.5f, 1,true).ToVector();
+        Vector2 projectedSizeB = tc.DistanceFromProjectedSize(sizeToReachB, 0.5f, 2,true).ToVector();
         //DEBUG
         Debug.Log(projectedSizeA + ";" + projectedSizeB);
         Dictionary<float, Interval> alphas = tc._alphaComputer.getIntervalOfAcceptedAlpha(projectedSizeA, projectedSizeB);
@@ -282,7 +284,7 @@ public class testScript : MonoBehaviour
     private void testGetAlphaFromDistance()
     {
         ToricComputing tc = new ToricComputing(target1, target2);
-        Dictionary<float, Interval> alphaInv = tc._alphaComputer.getIntervalOfAcceptedAlpha(distanceToA, distanceToB);
+        Dictionary<float, Interval> alphaInv = tc._alphaComputer.getIntervalOfAcceptedAlpha(distanceToA, distanceToB,0.05f,true);
 
         Interval alphaRange;
         float[] keys = new float[alphaInv.Keys.Count];
@@ -298,7 +300,7 @@ public class testScript : MonoBehaviour
         Debug.Log(alphaRange);
         Toricmanifold test = new Toricmanifold(alpha, theta, phi, target1, target2);
         Vector3 posTest = test.ToWorldPosition();
-        Quaternion rotTest = test.ComputeOrientation( tilt);
+        
         GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
         //DEBUG
@@ -306,7 +308,7 @@ public class testScript : MonoBehaviour
         Debug.Log("distance: " + (posTest - target2.transform.position).magnitude);
 
         cube.transform.position = posTest;
-        cube.transform.rotation = rotTest;
+        
     }
 
     
@@ -314,7 +316,7 @@ public class testScript : MonoBehaviour
     private void testIntervalFromOnscreenPos()
     {
         ToricComputing tc = new ToricComputing(target1, target2);
-        Interval alphaTest = tc._alphaComputer.getAlphaIntervalFromOnscreenPositions(screenPos1, screenPos2);
+        Interval alphaTest = tc._alphaComputer.getAlphaIntervalFromOnscreenPositions(screenPos1, screenPos2,true);
 
 
 

@@ -34,7 +34,7 @@ public class ToricComputing
         A = _target1.transform.position;
         B = _target2.transform.position;
         AB = B - A;
-        _alphaComputer = new AlphaComputer(AB);
+        _alphaComputer = new AlphaComputer(A,B);
         _vantageCons = new vantageConstraint(A,B);
     }
 
@@ -48,11 +48,12 @@ public class ToricComputing
      * @return an interval of distance to the target
      * 
      */
-    public Interval DistanceFromProjectedSize(Vector2 sizeConstraint, float boundingSphereRadius, GameObject target)
+    public Interval DistanceFromProjectedSize(Vector2 sizeConstraint, float boundingSphereRadius, int target, Boolean visualize = false)
     {
-        Camera.main.transform.LookAt(target.transform);
+        
 
         float _radius = boundingSphereRadius;
+        Vector3 camPos = Camera.main.transform.position;
 
         Vector2 SxAndSy = ComputeScale();
         Sx = SxAndSy[0];
@@ -60,6 +61,22 @@ public class ToricComputing
 
         float minDistance = ExactDistanceByProjectedSize(sizeConstraint[0], _radius);
         float maxDistance = ExactDistanceByProjectedSize(sizeConstraint[1], _radius);
+
+
+        if (visualize)
+        {
+            Vector3 targetPos = A;
+            if (target == 2) targetPos = B;
+           
+            Debug.DrawLine(camPos, camPos + (targetPos - camPos).normalized * minDistance, Color.red, Mathf.Infinity);
+            Debug.DrawLine(camPos, camPos + (targetPos - camPos).normalized * maxDistance, Color.green, Mathf.Infinity);
+
+            GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            sphere.name = "bounding sphere";
+            sphere.transform.localScale = Vector3.one * boundingSphereRadius;
+            sphere.transform.position = targetPos;
+
+        }
 
         return new Interval(minDistance, maxDistance);
     }
@@ -78,12 +95,12 @@ public class ToricComputing
      * i.e. a theta interval in which the intersection is
      * 
      */
-    public Dictionary<float, Interval> getThetaIntervallFromVantageBothTargets(Vector3 vantageA, float deviationA, Vector3 vantageB, float deviationB, float samplingRate)
+    public Dictionary<float, Interval> getThetaIntervallFromVantageBothTargets(Vector3 vantageA, float deviationA, Vector3 vantageB, float deviationB, float samplingRate, bool visualize = false)
     {
 
         Dictionary<float, Interval> res = new Dictionary<float, Interval>();
-        Dictionary<float, Interval> phiBetaA = _vantageCons.getPositionFromVantageOneTarget(A, vantageA, deviationA, samplingRate);
-        Dictionary<float, Interval> phiBetaB = _vantageCons.getPositionFromVantageOneTarget(B, vantageB, deviationB, samplingRate);
+        Dictionary<float, Interval> phiBetaA = _vantageCons.getPositionFromVantageOneTarget(A, vantageA, deviationA, samplingRate, visualize);
+        Dictionary<float, Interval> phiBetaB = _vantageCons.getPositionFromVantageOneTarget(B, vantageB, deviationB, samplingRate, visualize);
 
 
         float[] phiAKeys = phiBetaA.Keys.ToArray();

@@ -10,11 +10,15 @@ using UnityEngine;
 public class AlphaComputer
 {
     private Vector3 _AB;
+    private Vector3 _A;
+    private Vector3 _B;
     private float _frameRadius = 0.5f;
 
-    public AlphaComputer(Vector3 AB)
+    public AlphaComputer(Vector3 A, Vector3 B)
     {
-        _AB = AB;
+        _A = A;
+        _B = B;
+        _AB = B-A;
     }
 
 
@@ -25,8 +29,15 @@ public class AlphaComputer
     /// <param name="distanceToB">Vector2 [minimal distance; max distance] to B</param>
     /// <param name="samplingRate">sampling rate for the resulting dictionary keys</param>
     /// <returns>an interval of accepted alpha</returns>
-    public Dictionary<float, Interval> getIntervalOfAcceptedAlpha(Vector2 distanceToA, Vector2 distanceToB, float samplingRate = 0.05f)
+    public Dictionary<float, Interval> getIntervalOfAcceptedAlpha(Vector2 distanceToA, Vector2 distanceToB, float samplingRate = 0.05f, Boolean visualize = false)
     {
+        if (visualize)
+        {
+            _visualizeDistance(distanceToA, distanceToB);
+        }
+
+
+
         Dictionary<float, Interval> IaA = getIntervalFromA(distanceToA[0], distanceToA[1], samplingRate);
         Dictionary<float, Interval> IaB = getIntervalFromB(distanceToB[0], distanceToB[1], samplingRate);
         Dictionary<float, Interval> Ia = new Dictionary<float, Interval>();
@@ -48,6 +59,8 @@ public class AlphaComputer
         }
         return Ia;
     }
+
+  
 
     /// <summary>
     /// The alpha interval from the vantage angle constraint for a given beta and theta
@@ -81,8 +94,10 @@ public class AlphaComputer
  * 
  */
 
-    public Interval getAlphaIntervalFromOnscreenPositions(Vector2 desPosA, Vector2 desPosB)
+    public Interval getAlphaIntervalFromOnscreenPositions(Vector2 desPosA, Vector2 desPosB,Boolean visualize = false)
     {
+
+        
         List<Vector2> verticesFrameTargetA = getFrameTarget(desPosA);
         List<Vector2> verticesFrameTargetB = getFrameTarget(desPosB);
 
@@ -114,7 +129,16 @@ public class AlphaComputer
                 float alpha = Vector3.Angle(pA, pB) * Mathf.Deg2Rad;
                 alphaValues.Add(alpha);
             }
+
         }
+
+
+        if (visualize)
+        {
+            _visualizeOnscreenPosition(verticesFrameTargetA, verticesFrameTargetB);
+        }
+
+
         return new Interval(Mathf.Min(alphaValues.ToArray()), Mathf.Max(alphaValues.ToArray()));
     }
 
@@ -123,11 +147,50 @@ public class AlphaComputer
 
 
 
+
+
     //private methods
 
+        //TODO adjust to vecAB instead of Vector3.up
+    private void _visualizeDistance(Vector2 distanceToA, Vector2 distanceToB)
+    {
+        Ellipse minDistanceA = new Ellipse(distanceToA[0], distanceToA[0], _A, Vector3.up);
+        minDistanceA.Draw(Color.red);
+
+        Ellipse maxDistanceA = new Ellipse(distanceToA[1], distanceToA[1], _A, Vector3.up);
+        maxDistanceA.Draw(Color.green);
+
+        Ellipse minDistanceB = new Ellipse(distanceToB[0], distanceToB[0], _B, Vector3.up);
+        minDistanceB.Draw(Color.red);
+
+        Ellipse maxDistanceB = new Ellipse(distanceToB[1], distanceToB[1], _B, Vector3.up);
+        maxDistanceB.Draw(Color.green);
+    }
 
 
+    //TODO
+    private void _visualizeOnscreenPosition(List<Vector2> verticesFrameTargetA, List<Vector2> verticesFrameTargetB)
+    {
 
+        Vector3 previousPoint = _A;
+
+        foreach (Vector2 item in verticesFrameTargetA)
+        {
+            Vector3 cornerpoint = new Vector3(_A.x + item.x, _A.y + item.y, _A.z);
+            Debug.DrawLine(previousPoint, cornerpoint, Color.red, Mathf.Infinity);
+            previousPoint = cornerpoint;
+        }
+
+
+         previousPoint = _B;
+
+        foreach (Vector2 item in verticesFrameTargetB)
+        {
+            Vector3 cornerpoint = new Vector3(_B.x + item.x, _B.y + item.y, _B.z);
+            Debug.DrawLine(previousPoint, cornerpoint, Color.blue, Mathf.Infinity);
+            previousPoint = cornerpoint;
+        }
+    }
 
 
 
@@ -245,6 +308,7 @@ public class AlphaComputer
     }
 
     //creates a list of vertices belonging to an octagon around a target 
+    //TODO adjust _frameradius to screensize, instead of world space
     private List<Vector2> getFrameTarget(Vector2 desPosTarget)
     {
         List<Vector2> res = new List<Vector2>();

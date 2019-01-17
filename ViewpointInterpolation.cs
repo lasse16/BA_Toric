@@ -20,7 +20,7 @@ public class ViewpointInterpolation
     
     public Vector3 finalPosition(float time)
     {
-        float gP = findXOverTime(_time0, _time1, time);
+        float gP = findXOverTimePosition(_time0, _time1, time);
 
 
 
@@ -36,11 +36,15 @@ public class ViewpointInterpolation
 
     public Quaternion finalOrientation(float time, Vector3 position)
     {
-        float gF = findXOverTime(_time0, _time1, time);
+        float gF = findXOverTimeOrientation(_time0, _time1, time);
 
-        Toricmanifold T1 = new Toricmanifold(position.x * Mathf.Rad2Deg, position.y * Mathf.Rad2Deg, position.z * Mathf.Rad2Deg, _keypoint1._target1, _keypoint1._target2);
+        position = ToricComputing.FromWorldPosition(position,_keypoint1._target1.transform.position, _keypoint1._target2.transform.position);
+
+        Toricmanifold T1 = new Toricmanifold(position.x * Mathf.Rad2Deg, position.y * Mathf.Rad2Deg, position.z * Mathf.Rad2Deg, _keypoint1._target1,  _keypoint1._target2);
         Vector2[] desPosT1= _keypoint1.getDesiredScreenPositions();
         T1.SetDesiredPosition(desPosT1[0],desPosT1[1]);
+
+        position = ToricComputing.FromWorldPosition(position, _keypoint2._target1.transform.position, _keypoint2._target2.transform.position);
 
         Toricmanifold T2 = new Toricmanifold(position.x * Mathf.Rad2Deg, position.y * Mathf.Rad2Deg, position.z * Mathf.Rad2Deg, _keypoint2._target1, _keypoint2._target2);
         Vector2[] desPosT2 = _keypoint2.getDesiredScreenPositions();
@@ -51,7 +55,7 @@ public class ViewpointInterpolation
 
 
         //controlling motion along time
-        Quaternion rotation =  Quaternion.Slerp(qT1 ,qT2 , 1 - gF);
+        Quaternion rotation =  Quaternion.Slerp(qT1 ,qT2 , gF);
 
         return rotation;
     }
@@ -65,10 +69,10 @@ public class ViewpointInterpolation
         Vector3 p0 = ToricComputing.FromWorldPosition(_keypoint1.ToWorldPosition(), targets[0], targets[1]);
         Vector3 p1 = ToricComputing.FromWorldPosition(_keypoint2.ToWorldPosition(), targets[0], targets[1]);
 
-        Debug.Log(p0 * Mathf.Rad2Deg);
-        Debug.Log(p1 * Mathf.Rad2Deg);
+     
 
-        float alphaInterpolated = p0.x * x + p1.x * (1 - x);
+        float alphaInterpolated = p0.x * (1 - x) + p1.x * x;
+        alphaInterpolated *= Mathf.Rad2Deg;
 
         Vector3 vantageA0 = _keypoint1.ToWorldPosition() - targets[0];
         float distanceA0 = vantageA0.magnitude;
@@ -76,9 +80,9 @@ public class ViewpointInterpolation
 
         Vector3 vantageA1 = _keypoint2.ToWorldPosition() - targets[0];
         float distanceA1 = vantageA1.magnitude;
-        vantageA0 = vantageA1.normalized;
-        Vector3 interpolatedVa = x * vantageA0 + (1 - x) * vantageA1;
-        float interpolatedDistanceA = x * distanceA0 + (1 - x) * distanceA1;
+        vantageA1 = vantageA1.normalized;
+        Vector3 interpolatedVa = (1 - x)* vantageA0 + x * vantageA1;
+        float interpolatedDistanceA =  (1 - x)* distanceA0 + x * distanceA1;
 
         Vector3 vantageB0 = _keypoint1.ToWorldPosition() - targets[1];
         float distanceB0 = vantageB0.magnitude;
@@ -87,11 +91,14 @@ public class ViewpointInterpolation
         Vector3 vantageB1 = _keypoint2.ToWorldPosition() - targets[1];
         float distanceB1 = vantageB1.magnitude;
         vantageB1 = vantageB1.normalized;
-        Vector3 interpolatedVb = x * vantageB0 + (1 - x) * vantageB1;
-        float interpolatedDistanceB = x * distanceB0 + (1 - x) * distanceB1;
+        Vector3 interpolatedVb =  (1 - x)* vantageB0 + x * vantageB1;
+        float interpolatedDistanceB =  (1 - x)* distanceB0 + x * distanceB1;
+
+      
 
         float thetaInterpolatedA = 2 * Vector3.Angle(interpolatedVa, AB);
-        float thetaInterpolatedB = 2 * (Mathf.PI - Vector3.Angle(interpolatedVb, AB) - alphaInterpolated);
+        float thetaInterpolatedB = 2 * (180 - Vector3.Angle(-AB,interpolatedVb) - alphaInterpolated);
+        
 
 
         Vector3 upOnPlane = Vector3.ProjectOnPlane(Vector3.up, AB);
@@ -99,10 +106,11 @@ public class ViewpointInterpolation
         Vector3 phiZero = Vector3.Cross(upOnPlane, AB);
 
 
-        float phiInterpolatedA = Vector3.SignedAngle(phiZero, VAonPlane, -AB) * Mathf.Deg2Rad;
+        float phiInterpolatedA = Vector3.SignedAngle(phiZero, VAonPlane, -AB);
 
 
-        Toricmanifold intersectionTa = new Toricmanifold( alphaInterpolated * Mathf.Rad2Deg, thetaInterpolatedA * Mathf.Rad2Deg, phiInterpolatedA * Mathf.Rad2Deg, targetAB._target1, targetAB._target2);
+        Toricmanifold intersectionTa = new Toricmanifold( alphaInterpolated , thetaInterpolatedA, phiInterpolatedA, targetAB._target1, targetAB._target2);
+       
         float distanceAT = (intersectionTa.ToWorldPosition() - targets[0]).magnitude;
 
 
@@ -111,20 +119,28 @@ public class ViewpointInterpolation
          phiZero = Vector3.Cross(upOnPlane, AB);
 
 
-        float phiInterpolatedB = Vector3.SignedAngle(phiZero, VBonPlane, -AB) * Mathf.Deg2Rad;
+        float phiInterpolatedB = Vector3.SignedAngle(phiZero, VBonPlane, -AB);
 
-        Toricmanifold intersectionTb = new Toricmanifold(alphaInterpolated * Mathf.Rad2Deg, thetaInterpolatedB * Mathf.Rad2Deg, phiInterpolatedB * Mathf.Rad2Deg, targetAB._target1, targetAB._target2);
+        Toricmanifold intersectionTb = new Toricmanifold(alphaInterpolated, thetaInterpolatedB , phiInterpolatedB, targetAB._target1, targetAB._target2);
+       
         float distanceBT = (intersectionTb.ToWorldPosition() - targets[1]).magnitude;
 
 
         float lambdaA = Mathf.Sin(Vector3.Angle(AB, interpolatedVa));
         float lambdaB = Mathf.Sin(Vector3.Angle(AB, interpolatedVb));
 
-        return 0.5f * (targets[0] + targets[1] + interpolatedVa * ((interpolatedDistanceA + distanceAT * lambdaA) / (1 + lambdaA)) + interpolatedVb * ((interpolatedDistanceB + distanceBT * lambdaB) / (1 + lambdaB)));
+        Vector3 interpolatedTargets1 = targets[0] + interpolatedVa * 0.5f*(interpolatedDistanceA + distanceAT);
+        Vector3 interpolatedeTargets2 = targets[1] + interpolatedVb * 0.5f* (interpolatedDistanceB + distanceBT);
+        return 0.5f * ( interpolatedTargets1 + interpolatedeTargets2 );
     }
 
-    private float findXOverTime(float time0, float time1, float time)
+    private float findXOverTimePosition(float time0, float time1, float time)
     {
-        return (time - time0) / time1;
+        return (time - time0) / (time1-time0);
+    }
+
+    private float findXOverTimeOrientation(float time0, float time1, float time)
+    {
+        return (time - time0) / (time1 - time0);
     }
 }

@@ -26,7 +26,7 @@ public class vantageConstraint
     /// <param name="deviationAngle">the allowed angle of deviation around the direction v</param>
     /// <param name="samplingRate">the samplingRate of the phi keys</param>
     /// <returns>a dictionary of phi keys and a beta interval as a value</returns>
-    public Dictionary<float, Interval> getPositionFromVantageOneTarget(Vector3 targetPosition, Vector3 v, float deviationAngle, float samplingRate = 0.01f)
+    public Dictionary<float, Interval> getPositionFromVantageOneTarget(Vector3 targetPosition, Vector3 v, float deviationAngle, float samplingRate = 0.01f,bool visualize = false)
     {
         _targetPosition = targetPosition;
 
@@ -65,7 +65,10 @@ public class vantageConstraint
         Cone vantageCone = new Cone(prefferedVantageAngle, deviationAngle, _targetPosition);
         float r = Mathf.Tan(lambda);
 
-
+        if (visualize)
+        {
+            _visualize(r, vantageCone);
+        }
 
         //Find the appropiate equation for the conic section
         //Then create a phi interval for that cone, for each phi in that interval
@@ -330,27 +333,13 @@ public class vantageConstraint
     }
 
  
-    private void _visualize(Vector3 __targetPosition, float r, float lambda, Cone vantageCone, List<Vector2> possibleIntersections, float majorDistance, float minorDistance)
+    private void _visualize(float r, Cone vantageCone)
     {
         float coneHeight = Mathf.Sqrt(1 + r * r);
 
 
         vantageCone.Draw(Color.red, coneHeight);
-        Vector3 intersectionVantagePlane = __targetPosition + vantageCone._midline * coneHeight;
-        Debug.DrawLine(__targetPosition, intersectionVantagePlane, Color.black, Mathf.Infinity);
-        Debug.DrawLine(__targetPosition, __targetPosition + -_AB, Color.black, Mathf.Infinity);
-
-        Vector3 intersection_ABPlane = __targetPosition + _AB.normalized * checkBetaForPlane(lambda);
-        DrawPlane(intersection_ABPlane, -_AB.normalized);
-
-        foreach (Vector2 item in possibleIntersections)
-        {
-
-            Ellipse intersectionC = new Ellipse(majorDistance, minorDistance, intersectionVantagePlane, -_AB, 0);
-            Ellipse circlePhi = new Ellipse(r, r, intersection_ABPlane, -_AB);
-            circlePhi.Draw(Color.blue);
-            intersectionC.Draw(Color.red);
-        }
+       
     }
 
     private Interval appropiatePhiIntervalBounds(Vector2 x, float samplingRate)
@@ -422,7 +411,6 @@ public class vantageConstraint
         {
             case -1:
                 float differentEquals = beta + vantageCone._deviationAngle - Mathf.PI / 2;
-                Debug.Log(differentEquals);
                 if (beta == 0) return -3; //circle
                 if ((differentEquals < 0.00001f) && (Mathf.Abs(differentEquals) <= 0.00001f)) return -1; //parabola
                 if (beta + vantageCone._deviationAngle < Mathf.PI / 2) return -2; //ellipse
